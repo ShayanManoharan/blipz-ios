@@ -3,21 +3,30 @@ import Observation
 
 @Observable
 final class MathGameViewModel {
+    enum Phase: Equatable {
+        case notStarted
+        case playing
+        case finished
+    }
+
     private(set) var problems: [MathProblem] = []
-    private(set) var currentIndex = 0
-    private(set) var userAnswers: [Int] = []
+    private(set) var displayOrder: [Int] = []
+    private var answers: [Int?] = []
+    private(set) var currentDisplayIndex = 0
+    private(set) var phase: Phase = .notStarted
+    private(set) var startDate: Date?
+    private(set) var elapsedTime: TimeInterval?
     private(set) var result: MathSubmitResponse?
     private(set) var isLoading = false
     private(set) var errorMessage: String?
 
     var currentAnswerText = ""
 
-    var currentProblem: MathProblem? {
-        currentIndex < problems.count ? problems[currentIndex] : nil
-    }
+    var totalCount: Int { problems.count }
 
-    var isFinished: Bool {
-        !problems.isEmpty && currentIndex >= problems.count
+    var currentProblem: MathProblem? {
+        guard currentDisplayIndex < displayOrder.count else { return nil }
+        return problems[displayOrder[currentDisplayIndex]]
     }
 
     func loadDailyContent() async {
@@ -26,19 +35,36 @@ final class MathGameViewModel {
         do {
             let content: DailyContent = try await APIClient.shared.get("games/daily-content")
             problems = content.mathProblems
+            // Randomize presentation order per player; answers are still submitted
+            // back in the server's original order (see submitAllAnswers).
+            displayOrder = Array(problems.indices).shuffled()
+            answers = Array(repeating: nil, count: problems.count)
         } catch {
             errorMessage = "No daily content available yet. Generate it on the backend first."
         }
         isLoading = false
     }
 
-    func submitCurrentAnswer() {
-        guard let answer = Int(currentAnswerText) else { return }
-        userAnswers.append(answer)
-        currentAnswerText = ""
-        currentIndex += 1
+    func start() {
+        phase = .playing
+        startDate = Date()
+    }
 
-        if isFinished {
+    func checkAnswer() {
+        guard phase == .playing,
+              let problem = currentProblem,
+              let typed = Int(currentAnswerText),
+              typed == problem.answer else { return }
+
+        Haptics.light()
+        answers[displayOrder[currentDisplayIndex]] = typed
+        currentAnswerText = ""
+        currentDisplayIndex += 1
+
+        if currentDisplayIndex == displayOrder.count {
+            elapsedTime = startDate.map { Date().timeIntervalSince($0) }
+            phase = .finished
+            Haptics.success()
             Task { await submitAllAnswers() }
         }
     }
@@ -46,7 +72,7 @@ final class MathGameViewModel {
     private func submitAllAnswers() async {
         isLoading = true
         do {
-            let body = MathsAnswersSubmit(answers: userAnswers)
+            let body = MathsAnswersSubmit(answers: answers.compactMap { $0 })
             result = try await APIClient.shared.post("games/submit-maths", body: body)
         } catch {
             errorMessage = "Failed to submit score: \(error.localizedDescription)"
