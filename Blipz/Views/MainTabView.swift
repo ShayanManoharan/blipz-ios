@@ -12,17 +12,8 @@ struct MainTabView: View {
             TriviaGameView()
                 .tabItem { Label("Trivia", systemImage: "questionmark.circle") }
 
-            LeaderboardComingSoonView()
+            LeaderboardView()
                 .tabItem { Label("Leaderboard", systemImage: "trophy") }
-        }
-    }
-}
-
-private struct LeaderboardComingSoonView: View {
-    var body: some View {
-        VStack {
-            Text("Leaderboard coming soon")
-                .foregroundStyle(.secondary)
         }
     }
 }
