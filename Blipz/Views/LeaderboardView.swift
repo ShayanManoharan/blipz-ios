@@ -2,6 +2,7 @@ import SwiftUI
 
 struct LeaderboardView: View {
     @State private var viewModel = LeaderboardViewModel()
+    @State private var profileViewModel = ProfileViewModel()
     @State private var scope = Scope.global
 
     enum Scope: String, CaseIterable {
@@ -46,13 +47,22 @@ struct LeaderboardView: View {
             }
             .navigationTitle("Leaderboard")
             .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    if let streak = profileViewModel.profile?.currentStreak, streak > 0 {
+                        Label("\(streak)", systemImage: "flame.fill")
+                            .foregroundStyle(.orange)
+                    }
+                }
                 ToolbarItem(placement: .topBarTrailing) {
                     NavigationLink("Friends") {
                         FriendsView()
                     }
                 }
             }
-            .task { await load() }
+            .task {
+                await load()
+                await profileViewModel.loadProfile()
+            }
             .onChange(of: scope) { _, _ in
                 Task { await load() }
             }
