@@ -45,6 +45,13 @@ struct LeaderboardView: View {
                 }
             }
             .navigationTitle("Leaderboard")
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    NavigationLink("Friends") {
+                        FriendsView()
+                    }
+                }
+            }
             .task { await load() }
             .onChange(of: scope) { _, _ in
                 Task { await load() }
