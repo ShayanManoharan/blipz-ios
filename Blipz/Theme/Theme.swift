@@ -31,7 +31,7 @@ private struct CardBackgroundModifier: ViewModifier {
 private struct ScreenBackgroundModifier: ViewModifier {
     func body(content: Content) -> some View {
         content
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             .background(Theme.background.ignoresSafeArea())
     }
 }
@@ -55,22 +55,55 @@ struct PrimaryButtonStyle: ButtonStyle {
 }
 
 struct OptionButtonStyle: ButtonStyle {
-    var isSelected: Bool = false
+    enum State {
+        case normal
+        case selected
+        case correct
+        case incorrect
+        case dimmed
+    }
+
+    var state: State = .normal
+
+    private var fillColor: Color {
+        switch state {
+        case .normal, .dimmed: return Theme.cardBackground
+        case .selected: return Theme.accent
+        case .correct: return Theme.success
+        case .incorrect: return .red
+        }
+    }
+
+    private var foregroundColor: Color {
+        switch state {
+        case .normal, .dimmed: return Theme.accent
+        case .selected, .correct, .incorrect: return .white
+        }
+    }
+
+    private var borderOpacity: Double {
+        switch state {
+        case .normal: return 0.35
+        case .dimmed: return 0.15
+        case .selected, .correct, .incorrect: return 0
+        }
+    }
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .font(.body.weight(.medium))
             .multilineTextAlignment(.center)
-            .foregroundStyle(isSelected ? .white : Theme.accent)
+            .foregroundStyle(foregroundColor)
+            .opacity(state == .dimmed ? 0.5 : 1)
             .padding(.vertical, 14)
             .frame(maxWidth: .infinity)
             .background(
                 RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .fill(isSelected ? Theme.accent : Theme.cardBackground)
+                    .fill(fillColor)
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .strokeBorder(Theme.accent.opacity(isSelected ? 0 : 0.35), lineWidth: 1.5)
+                    .strokeBorder(Theme.accent.opacity(borderOpacity), lineWidth: 1.5)
             )
             .scaleEffect(configuration.isPressed ? 0.97 : 1)
     }
