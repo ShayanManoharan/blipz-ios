@@ -7,11 +7,10 @@ struct GuessGameView: View {
         ScrollView {
             VStack(spacing: 20) {
                 if let result = viewModel.result {
-                    Text("Score: \(result.score, specifier: "%.1f")/10")
-                        .font(.title)
-                        .bold()
-                    Text("Your guess: \(result.guess)")
-                        .foregroundStyle(.secondary)
+                    ResultCard(
+                        title: String(format: "%.1f/10", result.score),
+                        subtitle: "Your guess: \(result.guess)"
+                    )
                 } else {
                     AsyncImage(url: viewModel.imageUrl) { phase in
                         switch phase {
@@ -19,10 +18,12 @@ struct GuessGameView: View {
                             image
                                 .resizable()
                                 .scaledToFit()
-                                .clipShape(RoundedRectangle(cornerRadius: 12))
+                                .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+                                .shadow(color: .black.opacity(0.1), radius: 12, y: 6)
                         case .failure:
                             Color.gray.opacity(0.2)
                                 .frame(height: 300)
+                                .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
                                 .overlay(Text("Couldn't load image"))
                         default:
                             ProgressView()
@@ -30,14 +31,17 @@ struct GuessGameView: View {
                         }
                     }
 
-                    TextField("What do you see?", text: $viewModel.guessText)
-                        .textFieldStyle(.roundedBorder)
+                    VStack(spacing: 12) {
+                        TextField("What do you see?", text: $viewModel.guessText)
+                            .textFieldStyle(.roundedBorder)
 
-                    Button("Submit Guess") {
-                        Task { await viewModel.submitGuess() }
+                        Button("Submit Guess") {
+                            Task { await viewModel.submitGuess() }
+                        }
+                        .buttonStyle(PrimaryButtonStyle())
+                        .disabled(viewModel.guessText.isEmpty)
                     }
-                    .buttonStyle(.borderedProminent)
-                    .disabled(viewModel.guessText.isEmpty)
+                    .cardStyle()
                 }
 
                 if let error = viewModel.errorMessage {
@@ -52,6 +56,7 @@ struct GuessGameView: View {
             }
             .padding()
         }
+        .screenBackground()
         .task {
             await viewModel.loadDailyContent()
         }

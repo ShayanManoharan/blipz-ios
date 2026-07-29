@@ -13,13 +13,15 @@ struct FriendsView: View {
                     Button("Add") {
                         Task { await viewModel.addFriend() }
                     }
+                    .buttonStyle(.borderedProminent)
+                    .tint(Theme.accent)
                     .disabled(viewModel.usernameToAdd.isEmpty)
                 }
                 .padding(.horizontal)
 
                 if let success = viewModel.addSuccessMessage {
                     Text(success)
-                        .foregroundStyle(.green)
+                        .foregroundStyle(Theme.success)
                 }
                 if let error = viewModel.errorMessage {
                     Text(error)
@@ -28,9 +30,12 @@ struct FriendsView: View {
 
                 List(viewModel.friends) { friend in
                     Text(friend.username)
+                        .listRowBackground(Theme.cardBackground)
                 }
                 .listStyle(.plain)
+                .scrollContentBackground(.hidden)
             }
+            .screenBackground()
             .navigationTitle("Friends")
             .task { await viewModel.loadFriends() }
         }

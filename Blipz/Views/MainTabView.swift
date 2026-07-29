@@ -15,6 +15,7 @@ struct MainTabView: View {
             LeaderboardView()
                 .tabItem { Label("Leaderboard", systemImage: "trophy") }
         }
+        .tint(Theme.accent)
     }
 }
 

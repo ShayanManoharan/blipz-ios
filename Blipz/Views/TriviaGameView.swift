@@ -2,30 +2,38 @@ import SwiftUI
 
 struct TriviaGameView: View {
     @State private var viewModel = TriviaGameViewModel()
+    @State private var selectedOption: String?
 
     var body: some View {
         VStack(spacing: 24) {
             if let result = viewModel.result {
-                Text("You got \(result.correct)/\(result.total)!")
-                    .font(.title)
-                    .bold()
+                ResultCard(title: "\(result.correct)/\(result.total)", subtitle: "Nice work today!")
             } else if let question = viewModel.currentQuestion {
-                Text("Question \(viewModel.currentIndex + 1) of \(viewModel.questions.count)")
-                    .foregroundStyle(.secondary)
-                Text(question.question)
-                    .font(.title2)
-                    .bold()
-                    .multilineTextAlignment(.center)
+                VStack(spacing: 20) {
+                    Text("Question \(viewModel.currentIndex + 1) of \(viewModel.questions.count)")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                    Text(question.question)
+                        .font(.title2)
+                        .bold()
+                        .multilineTextAlignment(.center)
 
-                VStack(spacing: 12) {
-                    ForEach(question.options, id: \.self) { option in
-                        Button(option) {
-                            viewModel.selectAnswer(option)
+                    VStack(spacing: 12) {
+                        ForEach(question.options, id: \.self) { option in
+                            Button(option) {
+                                selectedOption = option
+                                Task {
+                                    try? await Task.sleep(for: .milliseconds(150))
+                                    viewModel.selectAnswer(option)
+                                    selectedOption = nil
+                                }
+                            }
+                            .buttonStyle(OptionButtonStyle(isSelected: selectedOption == option))
                         }
-                        .buttonStyle(.bordered)
-                        .frame(maxWidth: .infinity)
                     }
+                    .animation(.easeOut(duration: 0.15), value: selectedOption)
                 }
+                .cardStyle()
             } else if let error = viewModel.errorMessage {
                 Text(error)
                     .foregroundStyle(.secondary)
@@ -36,6 +44,7 @@ struct TriviaGameView: View {
             }
         }
         .padding()
+        .screenBackground()
         .task {
             await viewModel.loadDailyContent()
         }

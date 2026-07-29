@@ -23,6 +23,9 @@ struct LeaderboardView: View {
                     Text(message)
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .cardStyle()
+                        .padding(.horizontal)
                 }
 
                 if viewModel.isLoading {
@@ -32,19 +35,14 @@ struct LeaderboardView: View {
                         .foregroundStyle(.secondary)
                 } else {
                     List(entries) { entry in
-                        HStack {
-                            Text("#\(entry.rank)")
-                                .foregroundStyle(.secondary)
-                                .frame(width: 40, alignment: .leading)
-                            Text(entry.username)
-                            Spacer()
-                            Text(entry.totalScore, format: .number.precision(.fractionLength(1)))
-                                .bold()
-                        }
+                        LeaderboardRow(entry: entry)
+                            .listRowBackground(Theme.cardBackground)
                     }
                     .listStyle(.plain)
+                    .scrollContentBackground(.hidden)
                 }
             }
+            .screenBackground()
             .navigationTitle("Leaderboard")
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
@@ -78,6 +76,42 @@ struct LeaderboardView: View {
             await viewModel.loadGlobal()
         } else {
             await viewModel.loadFriends()
+        }
+    }
+}
+
+private struct LeaderboardRow: View {
+    let entry: LeaderboardEntry
+
+    var body: some View {
+        HStack {
+            Group {
+                if let medal {
+                    Text(medal)
+                } else {
+                    Text("#\(entry.rank)")
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .font(.headline)
+            .frame(width: 40, alignment: .leading)
+
+            Text(entry.username)
+                .fontWeight(entry.rank <= 3 ? .semibold : .regular)
+            Spacer()
+            Text(entry.totalScore, format: .number.precision(.fractionLength(1)))
+                .bold()
+                .foregroundStyle(Theme.accent)
+        }
+        .padding(.vertical, 4)
+    }
+
+    private var medal: String? {
+        switch entry.rank {
+        case 1: return "🥇"
+        case 2: return "🥈"
+        case 3: return "🥉"
+        default: return nil
         }
     }
 }

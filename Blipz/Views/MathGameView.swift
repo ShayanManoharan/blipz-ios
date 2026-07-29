@@ -6,25 +6,28 @@ struct MathGameView: View {
     var body: some View {
         VStack(spacing: 24) {
             if let result = viewModel.result {
-                Text("You got \(result.correct)/\(result.total)!")
-                    .font(.title)
-                    .bold()
+                ResultCard(title: "\(result.correct)/\(result.total)", subtitle: "Nice work today!")
             } else if let problem = viewModel.currentProblem {
-                Text("Problem \(viewModel.currentIndex + 1) of \(viewModel.problems.count)")
-                    .foregroundStyle(.secondary)
-                Text(problem.question)
-                    .font(.system(size: 40, weight: .bold))
-                TextField("Answer", text: $viewModel.currentAnswerText)
-                    .textFieldStyle(.roundedBorder)
-                    .keyboardType(.numbersAndPunctuation)
-                    .multilineTextAlignment(.center)
-                    .font(.title2)
+                VStack(spacing: 16) {
+                    Text("Problem \(viewModel.currentIndex + 1) of \(viewModel.problems.count)")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                    Text(problem.question)
+                        .font(.system(size: 44, weight: .bold, design: .rounded))
+                    TextField("Answer", text: $viewModel.currentAnswerText)
+                        .textFieldStyle(.roundedBorder)
+                        .keyboardType(.numbersAndPunctuation)
+                        .multilineTextAlignment(.center)
+                        .font(.title2)
+                        .padding(.horizontal, 40)
+                    Button("Submit") {
+                        viewModel.submitCurrentAnswer()
+                    }
+                    .buttonStyle(PrimaryButtonStyle())
                     .padding(.horizontal, 40)
-                Button("Submit") {
-                    viewModel.submitCurrentAnswer()
+                    .disabled(viewModel.currentAnswerText.isEmpty)
                 }
-                .buttonStyle(.borderedProminent)
-                .disabled(viewModel.currentAnswerText.isEmpty)
+                .cardStyle()
             } else if let error = viewModel.errorMessage {
                 Text(error)
                     .foregroundStyle(.secondary)
@@ -35,6 +38,7 @@ struct MathGameView: View {
             }
         }
         .padding()
+        .screenBackground()
         .task {
             await viewModel.loadDailyContent()
         }
