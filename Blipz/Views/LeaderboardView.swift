@@ -13,7 +13,7 @@ struct LeaderboardView: View {
 
     var body: some View {
         NavigationStack {
-            VStack(spacing: 12) {
+            VStack(spacing: 16) {
                 Picker("Scope", selection: $scope) {
                     ForEach(Scope.allCases, id: \.self) { Text($0.rawValue).tag($0) }
                 }
@@ -21,12 +21,7 @@ struct LeaderboardView: View {
                 .padding(.horizontal)
 
                 if let message = viewModel.dailyMessage, scope == .global {
-                    Text(message)
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .cardStyle()
-                        .padding(.horizontal)
+                    dailyCommentaryCard(message)
                 }
 
                 if viewModel.isLoading {
@@ -34,10 +29,19 @@ struct LeaderboardView: View {
                 } else if let error = viewModel.errorMessage {
                     Text(error)
                         .foregroundStyle(.secondary)
+                } else if entries.isEmpty {
+                    emptyState
                 } else {
-                    List(entries) { entry in
-                        LeaderboardRow(entry: entry)
-                            .listRowBackground(Theme.cardBackground)
+                    if podiumEntries.count == 3 {
+                        PodiumView(entries: podiumEntries)
+                            .padding(.horizontal)
+                    }
+
+                    List(remainingEntries) { entry in
+                        LeaderboardRow(entry: entry, isCurrentUser: isCurrentUser(entry))
+                            .listRowBackground(
+                                isCurrentUser(entry) ? Theme.accent.opacity(0.1) : Theme.cardBackground
+                            )
                     }
                     .listStyle(.plain)
                     .scrollContentBackground(.hidden)
@@ -80,6 +84,50 @@ struct LeaderboardView: View {
         scope == .global ? viewModel.globalEntries : viewModel.friendsEntries
     }
 
+    private var podiumEntries: [LeaderboardEntry] {
+        Array(entries.prefix(3))
+    }
+
+    private var remainingEntries: [LeaderboardEntry] {
+        podiumEntries.count == 3 ? Array(entries.dropFirst(3)) : entries
+    }
+
+    private func isCurrentUser(_ entry: LeaderboardEntry) -> Bool {
+        guard let username = profileViewModel.profile?.username else { return false }
+        return entry.username == username
+    }
+
+    private func dailyCommentaryCard(_ message: String) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Label("Daily Commentary", systemImage: "bubble.left.and.bubble.right.fill")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(Theme.accent)
+            Text(message)
+                .font(.subheadline)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .cardStyle()
+        .padding(.horizontal)
+    }
+
+    private var emptyState: some View {
+        VStack(spacing: 8) {
+            Image(systemName: scope == .friends ? "person.2.slash" : "trophy")
+                .font(.system(size: 32))
+                .foregroundStyle(.secondary)
+            Text(scope == .friends ? "No friends on the board yet" : "No scores yet today")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+            if scope == .friends {
+                Text("Add friends to see how you stack up.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.top, 40)
+    }
+
     private func load() async {
         if scope == .global {
             await viewModel.loadGlobal()
@@ -87,42 +135,110 @@ struct LeaderboardView: View {
             await viewModel.loadFriends()
         }
     }
-
 }
 
 private struct LeaderboardRow: View {
     let entry: LeaderboardEntry
+    var isCurrentUser: Bool = false
 
     var body: some View {
         HStack {
-            Group {
-                if let medal {
-                    Text(medal)
-                } else {
-                    Text("#\(entry.rank)")
-                        .foregroundStyle(.secondary)
-                }
-            }
-            .font(.headline)
-            .frame(width: 40, alignment: .leading)
+            Text("#\(entry.rank)")
+                .font(.headline)
+                .foregroundStyle(.secondary)
+                .frame(width: 32, alignment: .leading)
+
+            InitialsAvatar(name: entry.username, size: 32)
 
             Text(entry.username)
-                .fontWeight(entry.rank <= 3 ? .semibold : .regular)
-            Spacer()
+                .lineLimit(1)
+                .truncationMode(.tail)
+                .fontWeight(isCurrentUser ? .bold : .regular)
+
+            if isCurrentUser {
+                Text("You")
+                    .font(.caption2.weight(.semibold))
+                    .foregroundStyle(Theme.accent)
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 2)
+                    .background(Theme.accent.opacity(0.15), in: Capsule())
+            }
+
+            Spacer(minLength: 8)
+
             Text(entry.totalScore, format: .number.precision(.fractionLength(1)))
                 .bold()
                 .foregroundStyle(Theme.accent)
         }
-        .padding(.vertical, 4)
+        .padding(.vertical, 6)
+    }
+}
+
+private struct PodiumView: View {
+    /// Exactly 3 entries, ranks 1-3 in order.
+    let entries: [LeaderboardEntry]
+
+    var body: some View {
+        HStack(alignment: .bottom, spacing: 12) {
+            column(for: entries[1], height: 90)
+            column(for: entries[0], height: 112)
+            column(for: entries[2], height: 72)
+        }
+        .frame(maxWidth: .infinity)
     }
 
-    private var medal: String? {
-        switch entry.rank {
-        case 1: return "🥇"
-        case 2: return "🥈"
-        case 3: return "🥉"
-        default: return nil
+    private func column(for entry: LeaderboardEntry, height: CGFloat) -> some View {
+        VStack(spacing: 8) {
+            Image(systemName: "\(entry.rank).circle.fill")
+                .font(.title2)
+                .foregroundStyle(medalColor(entry.rank))
+
+            InitialsAvatar(name: entry.username, size: entry.rank == 1 ? 52 : 44)
+
+            Text(entry.username)
+                .font(.caption.weight(.semibold))
+                .lineLimit(1)
+                .frame(maxWidth: 84)
+
+            Text(entry.totalScore, format: .number.precision(.fractionLength(1)))
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .fill(medalColor(entry.rank).opacity(0.25))
+                .frame(height: height)
         }
+    }
+
+    private func medalColor(_ rank: Int) -> Color {
+        switch rank {
+        case 1: return Color(red: 0.85, green: 0.65, blue: 0.13)
+        case 2: return Color(white: 0.6)
+        case 3: return Color(red: 0.72, green: 0.45, blue: 0.2)
+        default: return Theme.accent
+        }
+    }
+}
+
+private struct InitialsAvatar: View {
+    let name: String
+    var size: CGFloat = 36
+
+    var body: some View {
+        Circle()
+            .fill(Theme.accent.opacity(0.15))
+            .overlay(
+                Text(initial)
+                    .font(.system(size: size * 0.42, weight: .bold, design: .rounded))
+                    .foregroundStyle(Theme.accent)
+            )
+            .frame(width: size, height: size)
+            .accessibilityHidden(true)
+    }
+
+    private var initial: String {
+        guard let first = name.trimmingCharacters(in: .whitespaces).first else { return "?" }
+        return String(first).uppercased()
     }
 }
 
