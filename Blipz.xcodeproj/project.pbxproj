@@ -6,6 +6,10 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		B7A4D180301A8600006C946D /* Supabase in Frameworks */ = {isa = PBXBuildFile; productRef = B7A4D181301A8600006C946D /* Supabase */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		B7DDAA732FCE7F6B00FAE0DB /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -52,6 +56,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				B7A4D180301A8600006C946D /* Supabase in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -112,6 +117,7 @@
 			);
 			name = Blipz;
 			packageProductDependencies = (
+				B7A4D181301A8600006C946D /* Supabase */,
 			);
 			productName = Blipz;
 			productReference = B7DDAA652FCE7F6800FAE0DB /* Blipz.app */;
@@ -195,6 +201,10 @@
 			);
 			mainGroup = B7DDAA5C2FCE7F6800FAE0DB;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				B7A4D17D301A843C006C946D /* XCRemoteSwiftPackageReference "swift-algorithms" */,
+				B7A4D17E301A84F8006C946D /* XCRemoteSwiftPackageReference "supabase-swift" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = B7DDAA662FCE7F6800FAE0DB /* Products */;
 			projectDirPath = "";
@@ -570,6 +580,33 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		B7A4D17D301A843C006C946D /* XCRemoteSwiftPackageReference "swift-algorithms" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/apple/swift-algorithms.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.2.1;
+			};
+		};
+		B7A4D17E301A84F8006C946D /* XCRemoteSwiftPackageReference "supabase-swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/supabase/supabase-swift";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.5.1;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		B7A4D181301A8600006C946D /* Supabase */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = B7A4D17E301A84F8006C946D /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = Supabase;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = B7DDAA5D2FCE7F6800FAE0DB /* Project object */;
 }
