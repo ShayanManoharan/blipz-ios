@@ -6,7 +6,7 @@ struct RootView: View {
     var body: some View {
         Group {
             if auth.isReady {
-                MathGameView()
+                MainTabView()
             } else {
                 ProgressView("Signing in…")
             }
