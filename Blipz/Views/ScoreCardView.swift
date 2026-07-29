@@ -56,6 +56,18 @@ private struct ScoreCardRow: View {
     }
 }
 
+enum ScoreCardRenderer {
+    static func image(for profile: UserProfile, displayScale: CGFloat) -> Image {
+        let dateLabel = Date.now.formatted(.dateTime.month(.abbreviated).day())
+        let renderer = ImageRenderer(content: ScoreCardView(profile: profile, dateLabel: dateLabel))
+        renderer.scale = displayScale
+        guard let uiImage = renderer.uiImage else {
+            return Image(systemName: "square.and.arrow.up")
+        }
+        return Image(uiImage: uiImage)
+    }
+}
+
 #Preview {
     ScoreCardView(
         profile: UserProfile(

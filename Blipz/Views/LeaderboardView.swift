@@ -54,7 +54,7 @@ struct LeaderboardView: View {
                 }
                 ToolbarItem(placement: .topBarTrailing) {
                     if let profile = profileViewModel.profile {
-                        let card = cardImage(for: profile)
+                        let card = ScoreCardRenderer.image(for: profile, displayScale: displayScale)
                         ShareLink(item: card, preview: SharePreview("My Blipz Score", image: card)) {
                             Image(systemName: "square.and.arrow.up")
                         }
@@ -88,15 +88,6 @@ struct LeaderboardView: View {
         }
     }
 
-    private func cardImage(for profile: UserProfile) -> Image {
-        let dateLabel = Date.now.formatted(.dateTime.month(.abbreviated).day())
-        let renderer = ImageRenderer(content: ScoreCardView(profile: profile, dateLabel: dateLabel))
-        renderer.scale = displayScale
-        guard let uiImage = renderer.uiImage else {
-            return Image(systemName: "square.and.arrow.up")
-        }
-        return Image(uiImage: uiImage)
-    }
 }
 
 private struct LeaderboardRow: View {
