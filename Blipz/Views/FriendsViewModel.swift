@@ -31,9 +31,11 @@ final class FriendsViewModel {
             let response: AddFriendResponse = try await APIClient.shared.post("friends/add", body: body)
             addSuccessMessage = "Added \(response.username)!"
             usernameToAdd = ""
+            Haptics.success()
             await loadFriends()
         } catch {
             errorMessage = "Couldn't add that friend — check the username and try again."
+            Haptics.error()
         }
         isLoading = false
     }

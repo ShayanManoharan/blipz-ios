@@ -11,6 +11,7 @@ struct FriendsView: View {
                         .textFieldStyle(.roundedBorder)
                         .autocapitalization(.none)
                     Button("Add") {
+                        Haptics.light()
                         Task { await viewModel.addFriend() }
                     }
                     .buttonStyle(.borderedProminent)

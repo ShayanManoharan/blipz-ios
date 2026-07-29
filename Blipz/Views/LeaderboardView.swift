@@ -77,6 +77,7 @@ struct LeaderboardView: View {
                 await profileViewModel.loadProfile()
             }
             .onChange(of: scope) { _, _ in
+                Haptics.light()
                 Task { await load() }
             }
         }
