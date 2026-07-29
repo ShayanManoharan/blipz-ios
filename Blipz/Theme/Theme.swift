@@ -112,11 +112,12 @@ struct OptionButtonStyle: ButtonStyle {
 struct ResultCard: View {
     let title: String
     var subtitle: String? = nil
+    @ScaledMetric(relativeTo: .largeTitle) private var titleFontSize: CGFloat = 34
 
     var body: some View {
         VStack(spacing: 8) {
             Text(title)
-                .font(.system(size: 34, weight: .bold, design: .rounded))
+                .font(.system(size: titleFontSize, weight: .bold, design: .rounded))
                 .foregroundStyle(Theme.accent)
             if let subtitle {
                 Text(subtitle)
@@ -124,5 +125,6 @@ struct ResultCard: View {
             }
         }
         .cardStyle()
+        .accessibilityElement(children: .combine)
     }
 }

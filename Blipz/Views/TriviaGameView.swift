@@ -3,6 +3,7 @@ import SwiftUI
 struct TriviaGameView: View {
     @State private var viewModel = TriviaGameViewModel()
     @State private var selectedOption: String?
+    @ScaledMetric(relativeTo: .title) private var headerFontSize: CGFloat = 28
 
     var body: some View {
         VStack(spacing: 20) {
@@ -34,11 +35,12 @@ struct TriviaGameView: View {
     private var header: some View {
         VStack(spacing: 4) {
             Text("Daily Trivia")
-                .font(.system(size: 28, weight: .bold, design: .rounded))
+                .font(.system(size: headerFontSize, weight: .bold, design: .rounded))
             Text("Five questions, once a day.")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
         }
+        .accessibilityElement(children: .combine)
     }
 
     private var progressBar: some View {

@@ -3,6 +3,8 @@ import SwiftUI
 struct MathGameView: View {
     @State private var viewModel = MathGameViewModel()
     @FocusState private var answerFieldFocused: Bool
+    @ScaledMetric(relativeTo: .title) private var headerFontSize: CGFloat = 28
+    @ScaledMetric(relativeTo: .largeTitle) private var problemFontSize: CGFloat = 48
 
     var body: some View {
         VStack(spacing: 24) {
@@ -35,11 +37,12 @@ struct MathGameView: View {
     private var header: some View {
         VStack(spacing: 4) {
             Text("Quick Maths")
-                .font(.system(size: 28, weight: .bold, design: .rounded))
+                .font(.system(size: headerFontSize, weight: .bold, design: .rounded))
             Text("Answer all 20 as fast as you can.")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
         }
+        .accessibilityElement(children: .combine)
     }
 
     private var notStartedContent: some View {
@@ -72,16 +75,18 @@ struct MathGameView: View {
                 Spacer()
                 if let startDate = viewModel.startDate {
                     TimelineView(.periodic(from: startDate, by: 0.1)) { context in
-                        Text(elapsedString(context.date.timeIntervalSince(startDate)))
+                        let elapsed = context.date.timeIntervalSince(startDate)
+                        Text(elapsedString(elapsed))
                             .font(.system(.subheadline, design: .monospaced))
                             .foregroundStyle(Theme.accent)
+                            .accessibilityLabel("Elapsed time: \(String(format: "%.1f", elapsed)) seconds")
                     }
                 }
             }
 
             if let problem = viewModel.currentProblem {
                 Text(problem.question)
-                    .font(.system(size: 48, weight: .bold, design: .rounded))
+                    .font(.system(size: problemFontSize, weight: .bold, design: .rounded))
                     .id(viewModel.currentDisplayIndex)
                     .transition(.opacity)
 

@@ -3,6 +3,7 @@ import SwiftUI
 struct ProfileView: View {
     @State private var viewModel = ProfileViewModel()
     @Environment(\.displayScale) private var displayScale
+    @ScaledMetric(relativeTo: .largeTitle) private var totalFontSize: CGFloat = 40
 
     var body: some View {
         NavigationStack {
@@ -90,10 +91,11 @@ struct ProfileView: View {
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
             Text(profile.totalScore, format: .number.precision(.fractionLength(1)))
-                .font(.system(size: 40, weight: .bold, design: .rounded))
+                .font(.system(size: totalFontSize, weight: .bold, design: .rounded))
                 .foregroundStyle(Theme.accent)
         }
         .frame(maxWidth: .infinity)
+        .accessibilityElement(children: .combine)
         .cardStyle()
     }
 }

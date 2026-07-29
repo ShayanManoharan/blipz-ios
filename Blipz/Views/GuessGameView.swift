@@ -5,6 +5,8 @@ struct GuessGameView: View {
     @State private var profileViewModel = ProfileViewModel()
     @State private var displayedScore: Double = 0
     @Environment(\.displayScale) private var displayScale
+    @ScaledMetric(relativeTo: .title) private var headerFontSize: CGFloat = 28
+    @ScaledMetric(relativeTo: .largeTitle) private var scoreFontSize: CGFloat = 48
 
     var body: some View {
         ScrollView {
@@ -48,11 +50,12 @@ struct GuessGameView: View {
     private var header: some View {
         VStack(spacing: 4) {
             Text("Today's Blip")
-                .font(.system(size: 28, weight: .bold, design: .rounded))
+                .font(.system(size: headerFontSize, weight: .bold, design: .rounded))
             Text("Everyone sees the same image.")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
         }
+        .accessibilityElement(children: .combine)
     }
 
     private var imageCard: some View {
@@ -121,7 +124,7 @@ struct GuessGameView: View {
 
             HStack(alignment: .firstTextBaseline, spacing: 6) {
                 Text(displayedScore, format: .number.precision(.fractionLength(1)))
-                    .font(.system(size: 48, weight: .bold, design: .rounded))
+                    .font(.system(size: scoreFontSize, weight: .bold, design: .rounded))
                     .foregroundStyle(Theme.accent)
                     .contentTransition(.numericText(value: displayedScore))
                 Text("/ 10")

@@ -54,6 +54,7 @@ struct LeaderboardView: View {
                     if let streak = profileViewModel.profile?.currentStreak, streak > 0 {
                         Label("\(streak)", systemImage: "flame.fill")
                             .foregroundStyle(.orange)
+                            .accessibilityLabel("\(streak) day streak")
                     }
                 }
                 ToolbarItem(placement: .topBarTrailing) {
@@ -62,6 +63,7 @@ struct LeaderboardView: View {
                         ShareLink(item: card, preview: SharePreview("My Blipz Score", image: card)) {
                             Image(systemName: "square.and.arrow.up")
                         }
+                        .accessibilityLabel("Share my score")
                     }
                 }
                 ToolbarItem(placement: .topBarTrailing) {
