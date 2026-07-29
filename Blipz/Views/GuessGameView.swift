@@ -11,6 +11,7 @@ struct GuessGameView: View {
                         title: String(format: "%.1f/10", result.score),
                         subtitle: "Your guess: \(result.guess)"
                     )
+                    .transition(.scale.combined(with: .opacity))
                 } else {
                     AsyncImage(url: viewModel.imageUrl) { phase in
                         switch phase {
@@ -57,6 +58,7 @@ struct GuessGameView: View {
             .padding()
         }
         .screenBackground()
+        .animation(.spring(response: 0.4, dampingFraction: 0.7), value: viewModel.result != nil)
         .task {
             await viewModel.loadDailyContent()
         }

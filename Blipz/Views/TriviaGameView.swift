@@ -8,6 +8,7 @@ struct TriviaGameView: View {
         VStack(spacing: 24) {
             if let result = viewModel.result {
                 ResultCard(title: "\(result.correct)/\(result.total)", subtitle: "Nice work today!")
+                    .transition(.scale.combined(with: .opacity))
             } else if let question = viewModel.currentQuestion {
                 VStack(spacing: 20) {
                     Text("Question \(viewModel.currentIndex + 1) of \(viewModel.questions.count)")
@@ -45,6 +46,7 @@ struct TriviaGameView: View {
         }
         .padding()
         .screenBackground()
+        .animation(.spring(response: 0.4, dampingFraction: 0.7), value: viewModel.result != nil)
         .task {
             await viewModel.loadDailyContent()
         }

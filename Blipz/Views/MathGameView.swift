@@ -7,6 +7,7 @@ struct MathGameView: View {
         VStack(spacing: 24) {
             if let result = viewModel.result {
                 ResultCard(title: "\(result.correct)/\(result.total)", subtitle: "Nice work today!")
+                    .transition(.scale.combined(with: .opacity))
             } else if let problem = viewModel.currentProblem {
                 VStack(spacing: 16) {
                     Text("Problem \(viewModel.currentIndex + 1) of \(viewModel.problems.count)")
@@ -39,6 +40,7 @@ struct MathGameView: View {
         }
         .padding()
         .screenBackground()
+        .animation(.spring(response: 0.4, dampingFraction: 0.7), value: viewModel.result != nil)
         .task {
             await viewModel.loadDailyContent()
         }
