@@ -5,4 +5,8 @@ struct UserProfile: Decodable {
     let username: String?
     let currentStreak: Int
     let longestStreak: Int
+    let mathsScore: Int
+    let triviaScore: Int
+    let guessScore: Double
+    let totalScore: Double
 }

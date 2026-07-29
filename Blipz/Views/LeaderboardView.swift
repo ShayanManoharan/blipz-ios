@@ -4,6 +4,7 @@ struct LeaderboardView: View {
     @State private var viewModel = LeaderboardViewModel()
     @State private var profileViewModel = ProfileViewModel()
     @State private var scope = Scope.global
+    @Environment(\.displayScale) private var displayScale
 
     enum Scope: String, CaseIterable {
         case global = "Global"
@@ -52,6 +53,14 @@ struct LeaderboardView: View {
                     }
                 }
                 ToolbarItem(placement: .topBarTrailing) {
+                    if let profile = profileViewModel.profile {
+                        let card = cardImage(for: profile)
+                        ShareLink(item: card, preview: SharePreview("My Blipz Score", image: card)) {
+                            Image(systemName: "square.and.arrow.up")
+                        }
+                    }
+                }
+                ToolbarItem(placement: .topBarTrailing) {
                     NavigationLink("Friends") {
                         FriendsView()
                     }
@@ -77,6 +86,16 @@ struct LeaderboardView: View {
         } else {
             await viewModel.loadFriends()
         }
+    }
+
+    private func cardImage(for profile: UserProfile) -> Image {
+        let dateLabel = Date.now.formatted(.dateTime.month(.abbreviated).day())
+        let renderer = ImageRenderer(content: ScoreCardView(profile: profile, dateLabel: dateLabel))
+        renderer.scale = displayScale
+        guard let uiImage = renderer.uiImage else {
+            return Image(systemName: "square.and.arrow.up")
+        }
+        return Image(uiImage: uiImage)
     }
 }
 
