@@ -4,21 +4,26 @@ struct TodayView: View {
     @State private var profileViewModel = ProfileViewModel()
     @State private var imageUrl: URL?
     @Environment(\.displayScale) private var displayScale
-    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
-    @ScaledMetric(relativeTo: .title) private var headerFontSize: CGFloat = 28
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(spacing: 20) {
-                    header
+                VStack(spacing: 14) {
+                    if let profile = profileViewModel.profile {
+                        TodayHeader(streak: profile.currentStreak)
 
-                    if profileViewModel.profile != nil {
-                        progressSection
-                        heroCard
-                        supportingCards
-                        totalCard
-                        shareSection
+                        DailyProgressSegments(
+                            guessCompleted: isGuessCompleted,
+                            mathsCompleted: isMathsCompleted,
+                            triviaCompleted: isTriviaCompleted
+                        )
+
+                        heroWidget(profile)
+                        supportingWidgets(profile)
+                        totalCard(profile)
+                        shareSection(profile)
                     } else if let error = profileViewModel.errorMessage {
                         Text(error)
                             .foregroundStyle(.secondary)
@@ -26,10 +31,12 @@ struct TodayView: View {
                         ProgressView()
                     }
                 }
-                .padding()
+                .padding(.horizontal, 16)
+                .padding(.top, 8)
+                .padding(.bottom, 20)
             }
             .screenBackground()
-            .navigationTitle("Today")
+            .toolbar(.hidden, for: .navigationBar)
             .task {
                 await profileViewModel.loadProfile()
                 await loadImagePreview()
@@ -37,16 +44,32 @@ struct TodayView: View {
         }
     }
 
-    // MARK: - Data
+    // MARK: - Completion derivation
+    //
+    // Centralized here so this is the one place to update once the backend adds
+    // explicit maths_completed/guess_completed/trivia_completed fields. Until then,
+    // there is no persisted "in progress" state anywhere, so this screen only ever
+    // shows Ready or Completed.
 
-    private var profile: UserProfile? { profileViewModel.profile }
+    private var isMathsCompleted: Bool {
+        (profileViewModel.profile?.mathsScore ?? 0) == 20
+    }
 
-    private var mathsCompleted: Bool { (profile?.mathsScore ?? 0) == 20 }
-    private var guessCompleted: Bool { (profile?.guessScore ?? 0) > 0 }
-    private var triviaCompleted: Bool { (profile?.triviaScore ?? 0) > 0 }
+    // NOTE: inferred from score > 0 because the backend has no explicit "played"
+    // flag yet. A legitimate score of exactly 0.0 will incorrectly read as "not
+    // played." Replace with a real `guess_completed` field when the backend adds one.
+    private var isGuessCompleted: Bool {
+        (profileViewModel.profile?.guessScore ?? 0) > 0
+    }
+
+    // NOTE: same limitation as Guess above — replace with `trivia_completed` once
+    // the backend exposes it.
+    private var isTriviaCompleted: Bool {
+        (profileViewModel.profile?.triviaScore ?? 0) > 0
+    }
 
     private var completedCount: Int {
-        [mathsCompleted, guessCompleted, triviaCompleted].filter { $0 }.count
+        [isGuessCompleted, isMathsCompleted, isTriviaCompleted].filter { $0 }.count
     }
 
     private func loadImagePreview() async {
@@ -60,179 +83,101 @@ struct TodayView: View {
 
     // MARK: - Sections
 
-    private var header: some View {
-        HStack(alignment: .top) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text("Today's Blipz")
-                    .font(.system(size: headerFontSize, weight: .bold, design: .rounded))
-                Text(Date.now.formatted(.dateTime.weekday(.wide).month(.abbreviated).day()))
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-            }
+    private func heroWidget(_ profile: UserProfile) -> some View {
+        let state: DailyGameCardState = isGuessCompleted ? .completed : .ready
 
-            Spacer()
-
-            if let streak = profile?.currentStreak, streak > 0 {
-                VStack(spacing: 2) {
-                    Image(systemName: "flame.fill")
-                        .foregroundStyle(Theme.streak)
-                    Text("\(streak)")
-                        .font(.headline)
-                }
-                .accessibilityElement(children: .combine)
-                .accessibilityLabel("\(streak) day streak")
-            }
-        }
-        .accessibilityElement(children: .combine)
-    }
-
-    private var progressSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("\(completedCount) of 3 completed")
-                .font(.subheadline.weight(.semibold))
-            ProgressView(value: Double(completedCount), total: 3)
-                .tint(Theme.accent)
-                .animation(.easeOut(duration: 0.3), value: completedCount)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-    }
-
-    private var heroCard: some View {
-        NavigationLink {
+        return NavigationLink {
             GuessGameView()
                 .toolbar(.hidden, for: .tabBar)
         } label: {
-            VStack(alignment: .leading, spacing: 12) {
-                HStack(alignment: .top) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Today's Blip")
-                            .font(.title2.bold())
-                        Text("Everyone sees the same image today")
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                    }
-                    Spacer()
-                    StatusBadge(isCompleted: guessCompleted)
-                }
-
-                heroImage
-
-                HStack {
-                    if guessCompleted, let profile {
-                        Text("Score: \(String(format: "%.1f", profile.guessScore))/10")
-                            .font(.headline)
-                            .foregroundStyle(Theme.accent)
-                    } else {
-                        Spacer(minLength: 0)
-                    }
-                    Spacer()
-                    CTALabel(isCompleted: guessCompleted)
-                }
-            }
-            .cardStyle()
+            HeroGameWidget(state: state, imageUrl: imageUrl, score: profile.guessScore, reduceMotion: reduceMotion)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(CardPressStyle(reduceMotion: reduceMotion))
+        .simultaneousGesture(TapGesture().onEnded { Haptics.light() })
         .accessibilityElement(children: .combine)
-        .accessibilityLabel(guessAccessibilityLabel)
+        .accessibilityLabel(
+            state == .completed
+                ? "Today's Blip, completed, score \(String(format: "%.1f", profile.guessScore)) out of 10"
+                : "Today's Blip, ready, tap to make your guess"
+        )
     }
 
-    private var guessAccessibilityLabel: String {
-        guessCompleted
-            ? "Today's Blip, completed, score \(String(format: "%.1f", profile?.guessScore ?? 0)) out of 10"
-            : "Today's Blip, not played, tap to play"
-    }
-
-    @ViewBuilder
-    private var heroImage: some View {
-        if let imageUrl {
-            AsyncImage(url: imageUrl) { phase in
-                switch phase {
-                case .success(let image):
-                    image
-                        .resizable()
-                        .scaledToFill()
-                        .frame(height: 180)
-                        .frame(maxWidth: .infinity)
-                        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-                        .shadow(color: Theme.accent.opacity(0.2), radius: 14, y: 8)
-                case .failure:
-                    placeholderImage
-                default:
-                    placeholderImage.overlay(ProgressView())
+    private func supportingWidgets(_ profile: UserProfile) -> some View {
+        Group {
+            if dynamicTypeSize.isAccessibilitySize {
+                VStack(spacing: 12) {
+                    mathsWidget(profile)
+                    triviaWidget(profile)
+                }
+            } else {
+                HStack(spacing: 12) {
+                    mathsWidget(profile)
+                    triviaWidget(profile)
                 }
             }
-            .accessibilityHidden(true)
-        } else {
-            placeholderImage.overlay(ProgressView())
-                .accessibilityHidden(true)
         }
     }
 
-    private var placeholderImage: some View {
-        RoundedRectangle(cornerRadius: 16, style: .continuous)
-            .fill(Theme.accent.opacity(0.1))
-            .frame(height: 180)
-    }
+    private func mathsWidget(_ profile: UserProfile) -> some View {
+        let state: DailyGameCardState = isMathsCompleted ? .completed : .ready
 
-    private var supportingCards: some View {
-        Group {
-            if horizontalSizeClass == .regular {
-                HStack(spacing: 16) { mathsCard; triviaCard }
-            } else {
-                VStack(spacing: 16) { mathsCard; triviaCard }
-            }
-        }
-    }
-
-    private var mathsCard: some View {
-        NavigationLink {
+        return NavigationLink {
             MathGameView()
                 .toolbar(.hidden, for: .tabBar)
         } label: {
-            GameCard(
+            CompactGameWidget(
                 icon: "number",
                 title: "Quick Maths",
-                subtitle: "20 problems, as fast as you can",
-                progressText: "\(profile?.mathsScore ?? 0)/20",
-                isCompleted: mathsCompleted
+                readyDescriptor: "20 problems",
+                completedValue: "\(profile.mathsScore)/20",
+                state: state
             )
         }
-        .buttonStyle(.plain)
+        .buttonStyle(CardPressStyle(reduceMotion: reduceMotion))
+        .simultaneousGesture(TapGesture().onEnded { Haptics.light() })
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Quick Maths, \(state == .completed ? "completed" : "ready")")
     }
 
-    private var triviaCard: some View {
-        NavigationLink {
+    private func triviaWidget(_ profile: UserProfile) -> some View {
+        let state: DailyGameCardState = isTriviaCompleted ? .completed : .ready
+
+        return NavigationLink {
             TriviaGameView()
                 .toolbar(.hidden, for: .tabBar)
         } label: {
-            GameCard(
+            CompactGameWidget(
                 icon: "questionmark.circle",
                 title: "Daily Trivia",
-                subtitle: "Five questions, once a day",
-                progressText: "\(profile?.triviaScore ?? 0)/5",
-                isCompleted: triviaCompleted
+                readyDescriptor: "5 questions",
+                completedValue: "\(profile.triviaScore)/5",
+                state: state
             )
         }
-        .buttonStyle(.plain)
+        .buttonStyle(CardPressStyle(reduceMotion: reduceMotion))
+        .simultaneousGesture(TapGesture().onEnded { Haptics.light() })
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Daily Trivia, \(state == .completed ? "completed" : "ready")")
     }
 
-    private var totalCard: some View {
-        VStack(spacing: 6) {
+    private func totalCard(_ profile: UserProfile) -> some View {
+        VStack(spacing: 4) {
             Text("Today's Total")
-                .font(.subheadline)
+                .font(.caption)
                 .foregroundStyle(.secondary)
-            Text((profile?.totalScore ?? 0), format: .number.precision(.fractionLength(1)))
-                .font(.system(size: 34, weight: .bold, design: .rounded))
+            Text(profile.totalScore, format: .number.precision(.fractionLength(1)))
+                .font(.system(size: 30, weight: .bold, design: .rounded))
                 .foregroundStyle(Theme.accent)
         }
         .frame(maxWidth: .infinity)
-        .cardStyle()
+        .padding(14)
+        .background(Theme.accent.opacity(0.08), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
         .accessibilityElement(children: .combine)
     }
 
     @ViewBuilder
-    private var shareSection: some View {
-        if completedCount > 0, let profile {
+    private func shareSection(_ profile: UserProfile) -> some View {
+        if completedCount > 0 {
             let card = ScoreCardRenderer.image(for: profile, displayScale: displayScale)
 
             if completedCount == 3 {
@@ -246,7 +191,8 @@ struct TodayView: View {
                     .buttonStyle(PrimaryButtonStyle())
                 }
                 .frame(maxWidth: .infinity)
-                .cardStyle()
+                .padding(16)
+                .background(Theme.success.opacity(0.1), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
             } else {
                 ShareLink(item: card, preview: SharePreview("My Blipz Score", image: card)) {
                     Label("Share my results", systemImage: "square.and.arrow.up")
@@ -258,67 +204,280 @@ struct TodayView: View {
     }
 }
 
-private struct StatusBadge: View {
-    let isCompleted: Bool
+// MARK: - Card state
+
+private enum DailyGameCardState {
+    case ready
+    case completed
+
+    var backgroundColor: Color {
+        switch self {
+        case .ready: return Theme.accent.opacity(0.10)
+        case .completed: return Theme.success.opacity(0.12)
+        }
+    }
+
+    var borderColor: Color {
+        switch self {
+        case .ready: return Theme.accent.opacity(0.35)
+        case .completed: return Theme.success.opacity(0.4)
+        }
+    }
+}
+
+private struct CardPressStyle: ButtonStyle {
+    var reduceMotion: Bool
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(configuration.isPressed ? 0.98 : 1)
+            .animation(reduceMotion ? nil : .easeOut(duration: 0.12), value: configuration.isPressed)
+    }
+}
+
+// MARK: - Header
+
+private struct TodayHeader: View {
+    let streak: Int
+    @ScaledMetric(relativeTo: .title2) private var titleFontSize: CGFloat = 22
 
     var body: some View {
-        Text(isCompleted ? "Completed" : "Not played")
-            .font(.caption2.weight(.semibold))
-            .foregroundStyle(isCompleted ? Theme.success : .secondary)
-            .padding(.horizontal, 8)
-            .padding(.vertical, 4)
-            .background(
-                Capsule().fill((isCompleted ? Theme.success : Color.secondary).opacity(0.15))
+        HStack(alignment: .top) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Today's Blipz")
+                    .font(.system(size: titleFontSize, weight: .bold, design: .rounded))
+                Text(Date.now.formatted(.dateTime.weekday(.wide).month(.abbreviated).day()))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            Spacer()
+
+            if streak > 0 {
+                HStack(spacing: 4) {
+                    Image(systemName: "flame.fill")
+                        .foregroundStyle(Theme.streak)
+                    Text("\(streak)")
+                        .font(.headline)
+                }
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel("\(streak) day streak")
+            }
+        }
+        .accessibilityElement(children: .combine)
+    }
+}
+
+// MARK: - Progress segments
+
+private struct DailyProgressSegments: View {
+    let guessCompleted: Bool
+    let mathsCompleted: Bool
+    let triviaCompleted: Bool
+
+    private var completedCount: Int {
+        [guessCompleted, mathsCompleted, triviaCompleted].filter { $0 }.count
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("\(completedCount) of 3 complete")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
+
+            HStack(spacing: 6) {
+                segment(label: "Guess", completed: guessCompleted)
+                segment(label: "Maths", completed: mathsCompleted)
+                segment(label: "Trivia", completed: triviaCompleted)
+            }
+        }
+    }
+
+    private func segment(label: String, completed: Bool) -> some View {
+        HStack(spacing: 3) {
+            if completed {
+                Image(systemName: "checkmark")
+                    .font(.system(size: 9, weight: .bold))
+            }
+            Text(label)
+                .font(.caption2.weight(.semibold))
+        }
+        .foregroundStyle(completed ? Theme.success : Theme.accent.opacity(0.65))
+        .padding(.vertical, 6)
+        .frame(maxWidth: .infinity)
+        .background(
+            Capsule().fill(completed ? Theme.success.opacity(0.15) : Theme.accent.opacity(0.1))
+        )
+        .overlay(
+            Capsule().strokeBorder(completed ? Theme.success.opacity(0.4) : Theme.accent.opacity(0.25), lineWidth: 1)
+        )
+        .animation(.easeOut(duration: 0.3), value: completed)
+    }
+}
+
+// MARK: - Completion checkmark
+
+private struct CompletionCheckmark: View {
+    var body: some View {
+        Image(systemName: "checkmark.circle.fill")
+            .foregroundStyle(Theme.success)
+            .transition(.scale.combined(with: .opacity))
+    }
+}
+
+// MARK: - Shimmer placeholder
+
+private struct ShimmerPlaceholder: View {
+    let reduceMotion: Bool
+    @State private var animate = false
+
+    var body: some View {
+        RoundedRectangle(cornerRadius: 14, style: .continuous)
+            .fill(Theme.accent.opacity(0.12))
+            .overlay(
+                LinearGradient(
+                    colors: [.clear, Theme.accent.opacity(0.22), .clear],
+                    startPoint: .leading, endPoint: .trailing
+                )
+                .rotationEffect(.degrees(12))
+                .offset(x: reduceMotion ? 0 : (animate ? 240 : -240))
             )
+            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .onAppear {
+                guard !reduceMotion else { return }
+                withAnimation(.linear(duration: 1.3).repeatForever(autoreverses: false)) {
+                    animate = true
+                }
+            }
     }
 }
 
-private struct CTALabel: View {
-    let isCompleted: Bool
+// MARK: - Hero widget (AI Prompt Guess)
 
-    var body: some View {
-        Label(isCompleted ? "View Result" : "Play", systemImage: "chevron.right")
-            .labelStyle(.titleAndIcon)
-            .font(.subheadline.weight(.semibold))
-            .foregroundStyle(Theme.accent)
-    }
-}
-
-private struct GameCard: View {
-    let icon: String
-    let title: String
-    let subtitle: String
-    let progressText: String
-    let isCompleted: Bool
+private struct HeroGameWidget: View {
+    let state: DailyGameCardState
+    let imageUrl: URL?
+    let score: Double
+    let reduceMotion: Bool
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(alignment: .top) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("TODAY'S BLIP")
+                        .font(.caption2.weight(.bold))
+                        .foregroundStyle(Theme.accent)
+                        .tracking(1)
+                    Text("What did AI create?")
+                        .font(.headline)
+                    Text("Everyone sees the same image")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                Spacer()
+                if state == .completed {
+                    CompletionCheckmark()
+                        .font(.title3)
+                        .animation(reduceMotion ? nil : .spring(response: 0.4, dampingFraction: 0.6), value: state)
+                }
+            }
+
+            heroImage
+
+            HStack {
+                if state == .completed {
+                    Text(String(format: "%.1f / 10", score))
+                        .font(.headline)
+                        .foregroundStyle(Theme.accent)
+                    Text("Completed")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(Theme.success)
+                } else {
+                    Text("Make your guess")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(Theme.accent)
+                }
+                Spacer()
+                Image(systemName: "chevron.right")
+                    .font(.caption.weight(.bold))
+                    .foregroundStyle(Theme.accent.opacity(0.6))
+            }
+        }
+        .padding(14)
+        .background(state.backgroundColor, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                .strokeBorder(state.borderColor, lineWidth: 1.5)
+        )
+    }
+
+    @ViewBuilder
+    private var heroImage: some View {
+        Group {
+            if let imageUrl {
+                AsyncImage(url: imageUrl) { phase in
+                    switch phase {
+                    case .success(let image):
+                        image.resizable().scaledToFill()
+                    default:
+                        ShimmerPlaceholder(reduceMotion: reduceMotion)
+                    }
+                }
+            } else {
+                ShimmerPlaceholder(reduceMotion: reduceMotion)
+            }
+        }
+        .frame(height: 100)
+        .frame(maxWidth: .infinity)
+        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .overlay(
+            LinearGradient(colors: [.clear, .black.opacity(0.18)], startPoint: .top, endPoint: .bottom)
+                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        )
+        .accessibilityHidden(true)
+    }
+}
+
+// MARK: - Compact widget (Maths / Trivia)
+
+private struct CompactGameWidget: View {
+    let icon: String
+    let title: String
+    let readyDescriptor: String
+    let completedValue: String
+    let state: DailyGameCardState
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack {
                 Image(systemName: icon)
-                    .font(.title2)
+                    .font(.title3)
                     .foregroundStyle(Theme.accent)
                 Spacer()
-                StatusBadge(isCompleted: isCompleted)
+                if state == .completed {
+                    CompletionCheckmark()
+                        .font(.subheadline)
+                } else {
+                    Image(systemName: "chevron.right")
+                        .font(.caption2.weight(.bold))
+                        .foregroundStyle(Theme.accent.opacity(0.5))
+                }
             }
 
             Text(title)
-                .font(.headline)
-            Text(subtitle)
-                .font(.caption)
-                .foregroundStyle(.secondary)
+                .font(.subheadline.weight(.semibold))
 
-            HStack {
-                Text(progressText)
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(Theme.accent)
-                Spacer()
-                CTALabel(isCompleted: isCompleted)
-            }
+            Text(state == .completed ? "\(completedValue) · Completed" : "\(readyDescriptor) · Ready")
+                .font(.caption2)
+                .foregroundStyle(state == .completed ? Theme.success : .secondary)
         }
+        .padding(12)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .cardStyle()
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(title), \(isCompleted ? "completed" : "not played")")
+        .background(state.backgroundColor, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .strokeBorder(state.borderColor, lineWidth: 1.5)
+        )
     }
 }
 
