@@ -72,7 +72,7 @@ final class MathGameViewModel {
     private func submitAllAnswers() async {
         isLoading = true
         do {
-            let body = MathsAnswersSubmit(answers: answers.compactMap { $0 })
+            let body = MathsAnswersSubmit(answers: answers.compactMap { $0 }, elapsedSeconds: elapsedTime ?? 0)
             result = try await APIClient.shared.post("games/submit-maths", body: body)
         } catch {
             errorMessage = "Failed to submit score: \(error.localizedDescription)"

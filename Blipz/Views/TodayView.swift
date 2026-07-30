@@ -45,27 +45,13 @@ struct TodayView: View {
 
     // MARK: - Completion derivation
     //
-    // Centralized here so this is the one place to update once the backend adds
-    // explicit maths_completed/guess_completed/trivia_completed fields. Until then,
-    // there is no persisted "in progress" state anywhere, so this screen only ever
-    // shows Ready or Completed.
+    // Backed by the backend's explicit maths_completed/guess_completed/trivia_completed
+    // fields (see PRODUCTION_AUDIT.md B2 and its fix) — no more score-based heuristics.
+    // A legitimate zero score now correctly still reads as completed.
 
-    private var isMathsCompleted: Bool {
-        (profileViewModel.profile?.mathsScore ?? 0) == 20
-    }
-
-    // NOTE: inferred from score > 0 because the backend has no explicit "played"
-    // flag yet. A legitimate score of exactly 0.0 will incorrectly read as "not
-    // played." Replace with a real `guess_completed` field when the backend adds one.
-    private var isGuessCompleted: Bool {
-        (profileViewModel.profile?.guessScore ?? 0) > 0
-    }
-
-    // NOTE: same limitation as Guess above — replace with `trivia_completed` once
-    // the backend exposes it.
-    private var isTriviaCompleted: Bool {
-        (profileViewModel.profile?.triviaScore ?? 0) > 0
-    }
+    private var isMathsCompleted: Bool { profileViewModel.profile?.mathsCompleted ?? false }
+    private var isGuessCompleted: Bool { profileViewModel.profile?.guessCompleted ?? false }
+    private var isTriviaCompleted: Bool { profileViewModel.profile?.triviaCompleted ?? false }
 
     private var completedCount: Int {
         [isGuessCompleted, isMathsCompleted, isTriviaCompleted].filter { $0 }.count

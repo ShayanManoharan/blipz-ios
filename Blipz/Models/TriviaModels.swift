@@ -10,4 +10,18 @@ struct TriviaSubmitResponse: Decodable {
     let correct: Int
     let total: Int
     let date: String
+    let alreadyCompleted: Bool
+}
+
+struct TriviaReviewQuestion: Decodable {
+    let question: String
+    let options: [String]
+    let selectedAnswer: String?
+    let correctAnswer: String
+    let isCorrect: Bool
+}
+
+struct TriviaReviewResponse: Decodable {
+    let date: String
+    let review: [TriviaReviewQuestion]
 }

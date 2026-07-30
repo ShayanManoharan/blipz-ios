@@ -9,4 +9,5 @@ struct GuessSubmitResponse: Decodable {
     let guess: String
     let score: Double
     let date: String
+    let alreadyCompleted: Bool
 }

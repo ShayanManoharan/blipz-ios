@@ -72,7 +72,8 @@ enum ScoreCardRenderer {
     ScoreCardView(
         profile: UserProfile(
             id: "1", username: "shayan", currentStreak: 4, longestStreak: 7,
-            mathsScore: 17, triviaScore: 4, guessScore: 8.5, totalScore: 29.5
+            mathsScore: 17, triviaScore: 4, guessScore: 8.5, totalScore: 29.5,
+            mathsCompleted: true, guessCompleted: true, triviaCompleted: true
         ),
         dateLabel: "Jul 29"
     )

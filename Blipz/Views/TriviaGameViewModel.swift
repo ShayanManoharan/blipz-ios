@@ -7,6 +7,7 @@ final class TriviaGameViewModel {
     private(set) var currentIndex = 0
     private(set) var userAnswers: [String] = []
     private(set) var result: TriviaSubmitResponse?
+    private(set) var review: [TriviaReviewQuestion]?
     private(set) var isLoading = false
     private(set) var errorMessage: String?
 
@@ -44,9 +45,22 @@ final class TriviaGameViewModel {
         do {
             let body = TriviaAnswersSubmit(answers: userAnswers)
             result = try await APIClient.shared.post("games/submit-trivia", body: body)
+            await loadReview()
         } catch {
             errorMessage = "Failed to submit answers: \(error.localizedDescription)"
         }
         isLoading = false
+    }
+
+    // Only ever succeeds once trivia is completed for today — the backend rejects
+    // this with a 404 beforehand, since revealing correct answers pre-completion
+    // would reopen the exact leak PRODUCTION_AUDIT.md B1 closed.
+    private func loadReview() async {
+        do {
+            let response: TriviaReviewResponse = try await APIClient.shared.get("games/trivia-review")
+            review = response.review
+        } catch {
+            review = nil
+        }
     }
 }

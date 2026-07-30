@@ -9,4 +9,7 @@ struct UserProfile: Decodable {
     let triviaScore: Int
     let guessScore: Double
     let totalScore: Double
+    let mathsCompleted: Bool
+    let guessCompleted: Bool
+    let triviaCompleted: Bool
 }

@@ -2,6 +2,7 @@ import Foundation
 
 struct MathsAnswersSubmit: Encodable {
     let answers: [Int]
+    let elapsedSeconds: Double
 }
 
 struct MathSubmitResponse: Decodable {
@@ -10,4 +11,5 @@ struct MathSubmitResponse: Decodable {
     let correct: Int
     let total: Int
     let date: String
+    let alreadyCompleted: Bool
 }

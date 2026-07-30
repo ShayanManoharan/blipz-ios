@@ -66,19 +66,19 @@ struct ProfileView: View {
                 icon: "number", label: "Maths",
                 score: "\(profile.mathsScore)/20",
                 progress: Double(profile.mathsScore) / 20,
-                isComplete: profile.mathsScore == 20
+                isComplete: profile.mathsCompleted
             )
             GameProgressRow(
                 icon: "photo", label: "Guess",
                 score: String(format: "%.1f/10", profile.guessScore),
                 progress: profile.guessScore / 10,
-                isComplete: false
+                isComplete: profile.guessCompleted
             )
             GameProgressRow(
                 icon: "questionmark.circle", label: "Trivia",
                 score: "\(profile.triviaScore)/5",
                 progress: Double(profile.triviaScore) / 5,
-                isComplete: false
+                isComplete: profile.triviaCompleted
             )
         }
         .frame(maxWidth: .infinity, alignment: .leading)
