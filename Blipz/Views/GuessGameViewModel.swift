@@ -6,7 +6,6 @@ final class GuessGameViewModel {
     private(set) var imageUrl: URL?
     var guessText = ""
     private(set) var result: GuessSubmitResponse?
-    private(set) var actualPrompt: String?
     private(set) var isLoading = false
     private(set) var errorMessage: String?
 

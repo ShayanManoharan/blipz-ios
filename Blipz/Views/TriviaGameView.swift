@@ -65,9 +65,9 @@ struct TriviaGameView: View {
             VStack(spacing: 12) {
                 ForEach(question.options, id: \.self) { option in
                     Button(option) {
-                        select(option, question: question)
+                        select(option)
                     }
-                    .buttonStyle(OptionButtonStyle(state: state(for: option, question: question)))
+                    .buttonStyle(OptionButtonStyle(state: selectedOption == option ? .selected : .normal))
                     .disabled(selectedOption != nil)
                 }
             }
@@ -77,30 +77,16 @@ struct TriviaGameView: View {
         .animation(.easeOut(duration: 0.2), value: selectedOption)
     }
 
-    private func state(for option: String, question: TriviaQuestion) -> OptionButtonStyle.State {
-        guard let selectedOption else { return .normal }
-
-        if option == question.answer {
-            return .correct
-        }
-        if option == selectedOption {
-            return .incorrect
-        }
-        return .dimmed
-    }
-
-    private func select(_ option: String, question: TriviaQuestion) {
+    // The backend never sends trivia answers to the client (see PublicTriviaQuestion),
+    // so correctness can't be revealed per-question anymore — only the aggregate
+    // correct/total from POST /games/submit-trivia, shown on the result screen.
+    private func select(_ option: String) {
         guard selectedOption == nil else { return }
         selectedOption = option
-
-        if option == question.answer {
-            Haptics.success()
-        } else {
-            Haptics.error()
-        }
+        Haptics.light()
 
         Task {
-            try? await Task.sleep(for: .milliseconds(550))
+            try? await Task.sleep(for: .milliseconds(350))
             viewModel.selectAnswer(option)
             selectedOption = nil
         }

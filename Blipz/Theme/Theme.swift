@@ -55,55 +55,30 @@ struct PrimaryButtonStyle: ButtonStyle {
 }
 
 struct OptionButtonStyle: ButtonStyle {
+    // Only normal/selected — the backend never sends answers to the client ahead of
+    // play (see PublicTriviaQuestion), so a correct/incorrect/dimmed reveal state
+    // isn't something this button can honestly show anymore.
     enum State {
         case normal
         case selected
-        case correct
-        case incorrect
-        case dimmed
     }
 
     var state: State = .normal
-
-    private var fillColor: Color {
-        switch state {
-        case .normal, .dimmed: return Theme.cardBackground
-        case .selected: return Theme.accent
-        case .correct: return Theme.success
-        case .incorrect: return .red
-        }
-    }
-
-    private var foregroundColor: Color {
-        switch state {
-        case .normal, .dimmed: return Theme.accent
-        case .selected, .correct, .incorrect: return .white
-        }
-    }
-
-    private var borderOpacity: Double {
-        switch state {
-        case .normal: return 0.35
-        case .dimmed: return 0.15
-        case .selected, .correct, .incorrect: return 0
-        }
-    }
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .font(.body.weight(.medium))
             .multilineTextAlignment(.center)
-            .foregroundStyle(foregroundColor)
-            .opacity(state == .dimmed ? 0.5 : 1)
+            .foregroundStyle(state == .selected ? .white : Theme.accent)
             .padding(.vertical, 14)
             .frame(maxWidth: .infinity)
             .background(
                 RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .fill(fillColor)
+                    .fill(state == .selected ? Theme.accent : Theme.cardBackground)
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .strokeBorder(Theme.accent.opacity(borderOpacity), lineWidth: 1.5)
+                    .strokeBorder(Theme.accent.opacity(state == .selected ? 0 : 0.35), lineWidth: 1.5)
             )
             .scaleEffect(configuration.isPressed ? 0.97 : 1)
     }
