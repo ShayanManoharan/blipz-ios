@@ -66,11 +66,6 @@ struct LeaderboardView: View {
                         .accessibilityLabel("Share my score")
                     }
                 }
-                ToolbarItem(placement: .topBarTrailing) {
-                    NavigationLink("Friends") {
-                        FriendsView()
-                    }
-                }
             }
             .task {
                 await load()
