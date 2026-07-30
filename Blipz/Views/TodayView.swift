@@ -125,12 +125,11 @@ struct TodayView: View {
                 .toolbar(.hidden, for: .tabBar)
         } label: {
             CompactGameWidget(
-                icon: "number",
+                game: .maths,
                 title: "Quick Maths",
                 readyDescriptor: "20 problems",
                 completedValue: "\(profile.mathsScore)/20",
-                state: state,
-                accent: TodayAccent.maths
+                state: state
             )
         }
         .buttonStyle(CardPressStyle(reduceMotion: reduceMotion))
@@ -147,12 +146,11 @@ struct TodayView: View {
                 .toolbar(.hidden, for: .tabBar)
         } label: {
             CompactGameWidget(
-                icon: "questionmark.circle",
+                game: .trivia,
                 title: "Daily Trivia",
                 readyDescriptor: "5 questions",
                 completedValue: "\(profile.triviaScore)/5",
-                state: state,
-                accent: TodayAccent.trivia
+                state: state
             )
         }
         .buttonStyle(CardPressStyle(reduceMotion: reduceMotion))
@@ -236,18 +234,6 @@ struct TodayView: View {
     }
 }
 
-// MARK: - Per-game accent colors
-//
-// Guess/Maths/Trivia get distinct but coordinated accents so the three widgets read
-// as separate games rather than one repeated lavender block. Completed always uses
-// Theme.success regardless of the game's accent.
-
-private enum TodayAccent {
-    static let guess = Theme.accent
-    static let maths = Color(red: 0.20, green: 0.47, blue: 0.95)
-    static let trivia = Color(red: 0.85, green: 0.55, blue: 0.15)
-}
-
 // MARK: - Card state
 
 private enum DailyGameCardState {
@@ -320,29 +306,19 @@ private struct DailyProgressTracker: View {
                 .foregroundStyle(.secondary)
 
             HStack(spacing: 0) {
-                node(icon: "photo", completed: guessCompleted, accent: TodayAccent.guess)
+                node(game: .guess, completed: guessCompleted)
                 track(active: guessCompleted)
-                node(icon: "number", completed: mathsCompleted, accent: TodayAccent.maths)
+                node(game: .maths, completed: mathsCompleted)
                 track(active: mathsCompleted)
-                node(icon: "questionmark", completed: triviaCompleted, accent: TodayAccent.trivia)
+                node(game: .trivia, completed: triviaCompleted)
             }
         }
         .accessibilityElement(children: .combine)
     }
 
-    private func node(icon: String, completed: Bool, accent: Color) -> some View {
-        let tint = completed ? Theme.success : accent
-        return ZStack {
-            Circle()
-                .fill(tint.opacity(completed ? 0.18 : 0.12))
-            Circle()
-                .strokeBorder(tint.opacity(completed ? 0.5 : 0.35), lineWidth: 1.5)
-            Image(systemName: completed ? "checkmark" : icon)
-                .font(.system(size: 12, weight: .bold))
-                .foregroundStyle(tint)
-        }
-        .frame(width: 30, height: 30)
-        .animation(.easeOut(duration: 0.3), value: completed)
+    private func node(game: BlipzGame, completed: Bool) -> some View {
+        BlipzGameEmblem(game: game, size: 26, isCompleted: completed)
+            .animation(.easeOut(duration: 0.3), value: completed)
     }
 
     private func track(active: Bool) -> some View {
@@ -351,16 +327,6 @@ private struct DailyProgressTracker: View {
             .frame(height: 2)
             .frame(maxWidth: .infinity)
             .animation(.easeOut(duration: 0.3), value: active)
-    }
-}
-
-// MARK: - Completion checkmark
-
-private struct CompletionCheckmark: View {
-    var body: some View {
-        Image(systemName: "checkmark.circle.fill")
-            .foregroundStyle(Theme.success)
-            .transition(.scale.combined(with: .opacity))
     }
 }
 
@@ -425,7 +391,10 @@ private struct HeroGameWidget: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            HStack(alignment: .top) {
+            HStack(alignment: .top, spacing: 10) {
+                BlipzGameEmblem(game: .guess, size: 40, isCompleted: state == .completed)
+                    .animation(reduceMotion ? nil : .spring(response: 0.4, dampingFraction: 0.6), value: state)
+
                 VStack(alignment: .leading, spacing: 2) {
                     Text("DAILY AI GUESS")
                         .font(.caption2.weight(.bold))
@@ -438,11 +407,6 @@ private struct HeroGameWidget: View {
                         .foregroundStyle(.secondary)
                 }
                 Spacer()
-                if state == .completed {
-                    CompletionCheckmark()
-                        .font(.title3)
-                        .animation(reduceMotion ? nil : .spring(response: 0.4, dampingFraction: 0.6), value: state)
-                }
             }
 
             heroImage
@@ -506,25 +470,17 @@ private struct HeroGameWidget: View {
 // MARK: - Compact widget (Maths / Trivia)
 
 private struct CompactGameWidget: View {
-    let icon: String
+    let game: BlipzGame
     let title: String
     let readyDescriptor: String
     let completedValue: String
     let state: DailyGameCardState
-    let accent: Color
 
-    private var tint: Color { state == .completed ? Theme.success : accent }
+    private var tint: Color { state == .completed ? Theme.success : game.accent }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            ZStack {
-                Circle()
-                    .fill(tint.opacity(0.15))
-                Image(systemName: state == .completed ? "checkmark" : icon)
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundStyle(tint)
-            }
-            .frame(width: 36, height: 36)
+            BlipzGameEmblem(game: game, size: 36, isCompleted: state == .completed)
 
             Text(title)
                 .font(.subheadline.weight(.semibold))
