@@ -101,8 +101,9 @@ struct GuessGameView: View {
             if viewModel.isLoading {
                 HStack(spacing: 8) {
                     ProgressView()
-                    Text("AI is judging your guess…")
+                    Text(viewModel.isScoring ? "Scoring your guess… this can take a few seconds" : "AI is judging your guess…")
                         .foregroundStyle(.secondary)
+                        .accessibilityLabel(viewModel.isScoring ? "Still scoring your guess, please wait" : "AI is judging your guess")
                 }
             } else {
                 Button("Lock In My Guess") {

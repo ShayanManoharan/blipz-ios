@@ -56,4 +56,22 @@ final class APIClient {
         try Self.validate(response, data: data)
         return try decoder.decode(T.self, from: data)
     }
+
+    // For endpoints that can return more than one *successful* shape (e.g. 200 vs 202
+    // "still in progress") — callers decode `data` themselves based on `statusCode`
+    // instead of assuming a single fixed response type.
+    func postRaw<Body: Encodable>(_ path: String, body: Body) async throws -> (statusCode: Int, data: Data) {
+        var request = try await authorizedRequest(path: path, method: "POST")
+        request.httpBody = try encoder.encode(body)
+        let (data, response) = try await URLSession.shared.data(for: request)
+        try Self.validate(response, data: data)
+        guard let http = response as? HTTPURLResponse else {
+            throw APIError.server("Invalid response")
+        }
+        return (http.statusCode, data)
+    }
+
+    func decode<T: Decodable>(_ type: T.Type, from data: Data) throws -> T {
+        try decoder.decode(type, from: data)
+    }
 }
