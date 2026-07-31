@@ -37,6 +37,9 @@ struct GuessGameView: View {
         .task {
             await viewModel.loadDailyContent()
         }
+        .onDisappear {
+            viewModel.cancelSubmission()
+        }
         .onChange(of: viewModel.result?.score) { _, newScore in
             guard let newScore else { return }
             Task { await profileViewModel.loadProfile() }
@@ -108,7 +111,7 @@ struct GuessGameView: View {
             } else {
                 Button("Lock In My Guess") {
                     Haptics.light()
-                    Task { await viewModel.submitGuess() }
+                    viewModel.submit()
                 }
                 .buttonStyle(PrimaryButtonStyle())
                 .disabled(viewModel.guessText.isEmpty)
