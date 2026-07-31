@@ -5,7 +5,7 @@ import Observation
 final class TriviaGameViewModel {
     private(set) var questions: [TriviaQuestion] = []
     private(set) var currentIndex = 0
-    private(set) var userAnswers: [String] = []
+    private(set) var userAnswers: [TriviaAnswerSubmit] = []
     private(set) var result: TriviaSubmitResponse?
     private(set) var review: [TriviaReviewQuestion]?
     private(set) var isLoading = false
@@ -31,8 +31,11 @@ final class TriviaGameViewModel {
         isLoading = false
     }
 
-    func selectAnswer(_ answer: String) {
-        userAnswers.append(answer)
+    // selectedOptionId must be the tapped option's stable identifier (A/B/C/D, from its
+    // position in `options`), never the visible option text — see
+    // PRODUCTION_AUDIT.md's Trivia grading fix.
+    func selectAnswer(questionId: String, selectedOptionId: String) {
+        userAnswers.append(TriviaAnswerSubmit(questionId: questionId, selectedOptionId: selectedOptionId))
         currentIndex += 1
 
         if isFinished {

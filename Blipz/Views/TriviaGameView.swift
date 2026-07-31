@@ -63,9 +63,9 @@ struct TriviaGameView: View {
                 .transition(.opacity)
 
             VStack(spacing: 12) {
-                ForEach(question.options, id: \.self) { option in
+                ForEach(Array(question.options.enumerated()), id: \.offset) { index, option in
                     Button(option) {
-                        select(option)
+                        select(option, questionId: question.id, optionId: triviaOptionIds[index])
                     }
                     .buttonStyle(OptionButtonStyle(state: selectedOption == option ? .selected : .normal))
                     .disabled(selectedOption != nil)
@@ -83,14 +83,18 @@ struct TriviaGameView: View {
     // correct answers (safe precisely because one-attempt-per-day is now enforced —
     // there's no further submission left to exploit with this knowledge), and this
     // is where the green/red feedback comes back, all at once.
-    private func select(_ option: String) {
+    //
+    // `option` is only ever used for the neutral selection UI here — the value sent to
+    // the backend is `optionId` (the tapped option's stable A/B/C/D identifier), never
+    // the visible text. See PRODUCTION_AUDIT.md's Trivia grading fix.
+    private func select(_ option: String, questionId: String, optionId: String) {
         guard selectedOption == nil else { return }
         selectedOption = option
         Haptics.light()
 
         Task {
             try? await Task.sleep(for: .milliseconds(350))
-            viewModel.selectAnswer(option)
+            viewModel.selectAnswer(questionId: questionId, selectedOptionId: optionId)
             selectedOption = nil
         }
     }
@@ -130,8 +134,8 @@ private struct TriviaReviewCard: View {
                 .font(.subheadline.weight(.semibold))
 
             VStack(spacing: 6) {
-                ForEach(item.options, id: \.self) { option in
-                    optionRow(option)
+                ForEach(Array(item.options.enumerated()), id: \.offset) { index, option in
+                    optionRow(option, optionId: triviaOptionIds[index])
                 }
             }
         }
@@ -140,13 +144,17 @@ private struct TriviaReviewCard: View {
         .accessibilityElement(children: .combine)
         .accessibilityLabel(
             "Question \(index): \(item.question). "
-                + (item.isCorrect ? "You answered correctly." : "You answered incorrectly — correct answer was \(item.correctAnswer).")
+                + (item.isCorrect ? "You answered correctly." : "You answered incorrectly — correct answer was \(item.correctAnswerText).")
         )
     }
 
-    private func optionRow(_ option: String) -> some View {
-        let isCorrectAnswer = option == item.correctAnswer
-        let isUserWrongPick = option == item.selectedAnswer && !item.isCorrect
+    // Matched by `optionId` (the option's stable A/B/C/D identifier, from its position),
+    // never by comparing `option` text against selected/correct answer text — see
+    // PRODUCTION_AUDIT.md's Trivia grading fix for why text-based matching is exactly
+    // the bug this replaces.
+    private func optionRow(_ option: String, optionId: String) -> some View {
+        let isCorrectAnswer = optionId == item.correctOptionId
+        let isUserWrongPick = optionId == item.selectedOptionId && !item.isCorrect
         let highlighted = isCorrectAnswer || isUserWrongPick
 
         return HStack {
