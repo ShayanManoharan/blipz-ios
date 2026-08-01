@@ -1,0 +1,15 @@
+// Shared across all build configurations. The Supabase publishable client
+// configuration below is NOT a secret — it's designed to be embedded on-device (same
+// as it was already hardcoded in Config.swift before this file existed). OpenAI's key
+// and Supabase's service-role key are backend-only and never appear anywhere in this
+// app. See docs/DEPLOYMENT.md's environment strategy for the full picture.
+//
+// Only one Supabase project exists today, so this value is currently identical across
+// Debug/Staging/Release — if a separate staging Supabase project is created later,
+// override INFOPLIST_KEY_SupabaseURL/SupabaseAnonKey in Staging.xcconfig instead of
+// changing this file.
+//
+// NOTE: xcconfig treats `//` as a comment start, so URLs need the `$()` empty-macro
+// trick below to keep the slashes from being swallowed.
+INFOPLIST_KEY_SupabaseURL = https:$()//$()eqivixkkpkkxijbgaegl.supabase.co
+INFOPLIST_KEY_SupabaseAnonKey = sb_publishable_41Hnq1oKebcUdKwE0f_EgA_SMbrLiWo

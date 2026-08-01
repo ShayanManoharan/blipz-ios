@@ -1,0 +1,8 @@
+#include "Shared.xcconfig"
+
+// TODO(deployment): replace with the real Production backend HTTPS URL once
+// deployed — see docs/DEPLOYMENT.md §5. Left as an obvious placeholder rather than a
+// guessed URL; Config.swift fails fast at launch (fatalError) if this is still
+// present in a Release-configured build, rather than silently shipping pointing at
+// nothing (or, worse, localhost).
+INFOPLIST_KEY_APIBaseURL = REPLACE_WITH_PRODUCTION_BACKEND_URL

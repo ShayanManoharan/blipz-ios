@@ -1,0 +1,7 @@
+#include "Shared.xcconfig"
+
+// TODO(deployment): replace with the real Staging backend HTTPS URL once deployed —
+// see docs/DEPLOYMENT.md §5. Left as an obvious placeholder rather than a guessed URL;
+// Config.swift fails fast at launch (fatalError) if this is still present in a
+// Staging-configured build, rather than silently building against nothing.
+INFOPLIST_KEY_APIBaseURL = REPLACE_WITH_STAGING_BACKEND_URL

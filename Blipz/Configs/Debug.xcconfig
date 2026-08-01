@@ -1,0 +1,7 @@
+#include "Shared.xcconfig"
+
+// Simulator/local device hitting a locally-run `uvicorn app.main:app --reload`.
+// Config.swift also has a compiled-in fallback to this same value for Debug builds
+// specifically, so local development keeps working even before this file is attached
+// to the Debug build configuration in Xcode — see docs/DEPLOYMENT.md §7.
+INFOPLIST_KEY_APIBaseURL = http:$()//$()127.0.0.1:8000
