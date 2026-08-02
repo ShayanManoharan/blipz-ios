@@ -3,7 +3,7 @@ import Foundation
 // Environment-aware configuration — values come from the active build configuration's
 // .xcconfig (Blipz/Configs/{Debug,Staging,Release}.xcconfig) via Info.plist injection
 // (GENERATE_INFOPLIST_FILE=YES + INFOPLIST_KEY_* build settings). See
-// docs/DEPLOYMENT.md §2/§7 for the full environment strategy and the one-time Xcode
+// docs/DEPLOYMENT.md §2/§8 for the full environment strategy and the one-time Xcode
 // wiring step these xcconfig files still need (attaching them to their build
 // configuration, and adding the Staging configuration itself, is a project-settings
 // change too risky to script blindly — see that doc for exact steps).
@@ -33,14 +33,14 @@ enum Config {
             fatalError(
                 "Missing required Info.plist key 'APIBaseURL' — attach this build "
                     + "configuration's .xcconfig (see Blipz/Configs/) before building. "
-                    + "See docs/DEPLOYMENT.md §7."
+                    + "See docs/DEPLOYMENT.md §8."
             )
         }
         guard !value.hasPrefix("REPLACE_WITH_") else {
             fatalError(
                 "APIBaseURL is still the placeholder '\(value)' — set the real backend "
                     + "URL in the active .xcconfig before shipping this build "
-                    + "configuration. See docs/DEPLOYMENT.md §5/§7."
+                    + "configuration. See docs/DEPLOYMENT.md §5/§8."
             )
         }
         guard let url = URL(string: value) else {
