@@ -40,7 +40,7 @@ final class MathGameViewModel {
             displayOrder = Array(problems.indices).shuffled()
             answers = Array(repeating: nil, count: problems.count)
         } catch {
-            errorMessage = "No daily content available yet. Generate it on the backend first."
+            errorMessage = "Couldn't load today's problems. \(error.friendlyMessage)"
         }
         isLoading = false
     }
@@ -75,7 +75,7 @@ final class MathGameViewModel {
             let body = MathsAnswersSubmit(answers: answers.compactMap { $0 }, elapsedSeconds: elapsedTime ?? 0)
             result = try await APIClient.shared.post("games/submit-maths", body: body)
         } catch {
-            errorMessage = "Failed to submit score: \(error.localizedDescription)"
+            errorMessage = "Couldn't submit your score. \(error.friendlyMessage)"
         }
         isLoading = false
     }

@@ -17,7 +17,7 @@ final class LeaderboardViewModel {
             globalEntries = response.leaderboard
             dailyMessage = response.message
         } catch {
-            errorMessage = "Couldn't load the global leaderboard."
+            errorMessage = "Couldn't load the global leaderboard. \(error.friendlyMessage)"
         }
         isLoading = false
     }
@@ -29,7 +29,7 @@ final class LeaderboardViewModel {
             let response: FriendsLeaderboardResponse = try await APIClient.shared.get("leaderboard/friends")
             friendsEntries = response.leaderboard
         } catch {
-            errorMessage = "Couldn't load the friends leaderboard."
+            errorMessage = "Couldn't load the friends leaderboard. \(error.friendlyMessage)"
         }
         isLoading = false
     }

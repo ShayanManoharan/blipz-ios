@@ -16,7 +16,7 @@ final class FriendsViewModel {
             let response: FriendsListResponse = try await APIClient.shared.get("friends/list")
             friends = response.friends
         } catch {
-            errorMessage = "Couldn't load friends."
+            errorMessage = "Couldn't load friends. \(error.friendlyMessage)"
         }
         isLoading = false
     }

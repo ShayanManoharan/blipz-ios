@@ -26,7 +26,7 @@ final class TriviaGameViewModel {
             let content: DailyContent = try await APIClient.shared.get("games/daily-content")
             questions = content.triviaQuestions
         } catch {
-            errorMessage = "No daily content available yet. Generate it on the backend first."
+            errorMessage = "Couldn't load today's trivia. \(error.friendlyMessage)"
         }
         isLoading = false
     }
@@ -50,7 +50,7 @@ final class TriviaGameViewModel {
             result = try await APIClient.shared.post("games/submit-trivia", body: body)
             await loadReview()
         } catch {
-            errorMessage = "Failed to submit answers: \(error.localizedDescription)"
+            errorMessage = "Couldn't submit your answers. \(error.friendlyMessage)"
         }
         isLoading = false
     }

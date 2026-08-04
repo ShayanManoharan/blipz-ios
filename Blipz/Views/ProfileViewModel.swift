@@ -13,7 +13,7 @@ final class ProfileViewModel {
         do {
             profile = try await APIClient.shared.get("users/me")
         } catch {
-            errorMessage = "Couldn't load profile."
+            errorMessage = "Couldn't load profile. \(error.friendlyMessage)"
         }
         isLoading = false
     }
