@@ -17,6 +17,10 @@ enum Theme {
 
     static let success = Color(red: 0.20, green: 0.70, blue: 0.45)
     static let streak = Color.orange
+    static let error = Color.red
+    static let gold = Color(red: 0.85, green: 0.65, blue: 0.13)
+    static let silver = Color(white: 0.6)
+    static let bronze = Color(red: 0.72, green: 0.45, blue: 0.2)
 }
 
 private struct CardBackgroundModifier: ViewModifier {

@@ -10,6 +10,23 @@ enum APIError: LocalizedError {
     }
 }
 
+extension Error {
+    /// A user-safe message for this error — never echoes raw server/API text.
+    var friendlyMessage: String {
+        if let urlError = self as? URLError {
+            switch urlError.code {
+            case .notConnectedToInternet, .networkConnectionLost, .dataNotAllowed:
+                return "You're offline. Check your connection and try again."
+            case .timedOut:
+                return "That took too long. Please try again."
+            default:
+                return "Something went wrong. Please try again."
+            }
+        }
+        return "Something went wrong. Please try again."
+    }
+}
+
 final class APIClient {
     static let shared = APIClient()
     private init() {}
