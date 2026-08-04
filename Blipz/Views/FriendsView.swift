@@ -9,7 +9,8 @@ struct FriendsView: View {
                 HStack {
                     TextField("Add friend by username", text: $viewModel.usernameToAdd)
                         .textFieldStyle(.roundedBorder)
-                        .autocapitalization(.none)
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled()
                     Button("Add") {
                         Haptics.light()
                         Task { await viewModel.addFriend() }
@@ -26,15 +27,37 @@ struct FriendsView: View {
                 }
                 if let error = viewModel.errorMessage {
                     Text(error)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Theme.error)
                 }
 
-                List(viewModel.friends) { friend in
-                    Text(friend.username)
-                        .listRowBackground(Theme.cardBackground)
+                if viewModel.isLoading && viewModel.friends.isEmpty {
+                    Spacer()
+                    ProgressView("Loading friends…")
+                    Spacer()
+                } else if viewModel.friends.isEmpty {
+                    Spacer()
+                    VStack(spacing: 8) {
+                        Image(systemName: "person.2")
+                            .font(.largeTitle)
+                            .foregroundStyle(.secondary)
+                        Text("No friends yet")
+                            .font(.headline)
+                        Text("Add a friend by username to compare your daily scores.")
+                            .foregroundStyle(.secondary)
+                            .multilineTextAlignment(.center)
+                    }
+                    .padding()
+                    Spacer()
+                } else {
+                    List(viewModel.friends) { friend in
+                        Text(friend.username)
+                            .lineLimit(1)
+                            .truncationMode(.tail)
+                            .listRowBackground(Theme.cardBackground)
+                    }
+                    .listStyle(.plain)
+                    .scrollContentBackground(.hidden)
                 }
-                .listStyle(.plain)
-                .scrollContentBackground(.hidden)
             }
             .screenBackground()
             .navigationTitle("Friends")
