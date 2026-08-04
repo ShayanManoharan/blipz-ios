@@ -3,6 +3,7 @@ import SwiftUI
 struct TodayView: View {
     @State private var profileViewModel = ProfileViewModel()
     @State private var imageUrl: URL?
+    @State private var displayedTotal: Double = 0
     @Environment(\.displayScale) private var displayScale
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -10,7 +11,7 @@ struct TodayView: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(spacing: 14) {
+                VStack(spacing: 12) {
                     if let profile = profileViewModel.profile {
                         TodayHeader(streak: profile.currentStreak)
 
@@ -24,10 +25,21 @@ struct TodayView: View {
                         supportingWidgets(profile)
                         totalSection(profile)
                     } else if let error = profileViewModel.errorMessage {
-                        Text(error)
-                            .foregroundStyle(.secondary)
+                        VStack(spacing: 12) {
+                            Text(error)
+                                .foregroundStyle(Theme.error)
+                                .multilineTextAlignment(.center)
+                            Button("Try Again") {
+                                Task { await profileViewModel.loadProfile() }
+                            }
+                            .buttonStyle(.bordered)
+                            .tint(Theme.accent)
+                        }
+                        .padding(.top, 60)
                     } else if profileViewModel.isLoading {
                         ProgressView()
+                            .accessibilityLabel("Loading today's Blipz")
+                            .padding(.top, 60)
                     }
                 }
                 .padding(.horizontal, 16)
@@ -37,8 +49,22 @@ struct TodayView: View {
             .screenBackground()
             .toolbar(.hidden, for: .navigationBar)
             .task {
-                await profileViewModel.loadProfile()
                 await loadImagePreview()
+            }
+            .onAppear {
+                // Fires every time Today becomes the visible top of the stack again —
+                // including returning from a just-completed game — not just on first
+                // launch, so the Ready → Completed transition actually happens promptly
+                // instead of waiting for the next cold start.
+                Task { await profileViewModel.loadProfile() }
+            }
+            .onChange(of: profileViewModel.profile?.totalScore) { _, newTotal in
+                guard let newTotal else { return }
+                if reduceMotion {
+                    displayedTotal = newTotal
+                } else {
+                    withAnimation(.easeOut(duration: 0.9)) { displayedTotal = newTotal }
+                }
             }
         }
     }
@@ -60,7 +86,15 @@ struct TodayView: View {
     private func loadImagePreview() async {
         do {
             let content: DailyContent = try await APIClient.shared.get("games/daily-content")
-            imageUrl = URL(string: content.imageUrl)
+            let url = URL(string: content.imageUrl)
+            // A tasteful one-time reveal when today's image first arrives, instead of
+            // it just popping in — see heroImage's matching .transition. Gated by
+            // Reduce Motion like every other animation in this view.
+            if reduceMotion {
+                imageUrl = url
+            } else {
+                withAnimation(.easeOut(duration: 0.5)) { imageUrl = url }
+            }
         } catch {
             imageUrl = nil
         }
@@ -79,6 +113,7 @@ struct TodayView: View {
         }
         .buttonStyle(CardPressStyle(reduceMotion: reduceMotion))
         .simultaneousGesture(TapGesture().onEnded { Haptics.light() })
+        .animation(reduceMotion ? nil : .spring(response: 0.5, dampingFraction: 0.75), value: isGuessCompleted)
         .accessibilityElement(children: .combine)
         .accessibilityLabel(
             state == .completed
@@ -120,6 +155,7 @@ struct TodayView: View {
         }
         .buttonStyle(CardPressStyle(reduceMotion: reduceMotion))
         .simultaneousGesture(TapGesture().onEnded { Haptics.light() })
+        .animation(reduceMotion ? nil : .spring(response: 0.5, dampingFraction: 0.75), value: isMathsCompleted)
         .accessibilityElement(children: .combine)
         .accessibilityLabel("Quick Maths, \(state == .completed ? "completed" : "ready")")
     }
@@ -141,21 +177,25 @@ struct TodayView: View {
         }
         .buttonStyle(CardPressStyle(reduceMotion: reduceMotion))
         .simultaneousGesture(TapGesture().onEnded { Haptics.light() })
+        .animation(reduceMotion ? nil : .spring(response: 0.5, dampingFraction: 0.75), value: isTriviaCompleted)
         .accessibilityElement(children: .combine)
         .accessibilityLabel("Daily Trivia, \(state == .completed ? "completed" : "ready")")
     }
 
     // Total/share card evolves with state instead of showing a flat "0.0" before
-    // anything has been played.
+    // anything has been played. The number itself counts up (displayedTotal, driven by
+    // the onChange in `body`) instead of just appearing — a small but real "less passive
+    // score presentation" touch, matching the same pattern GuessGameView already uses
+    // for its own result reveal.
     @ViewBuilder
     private func totalSection(_ profile: UserProfile) -> some View {
         switch completedCount {
         case 0:
             VStack(spacing: 4) {
-                Text("Today's score")
+                Text("Today's Blipz is ready")
                     .font(.caption)
                     .foregroundStyle(.secondary)
-                Text("Play a game to get started")
+                Text("Play all 3 to complete today's set")
                     .font(.subheadline.weight(.medium))
                     .foregroundStyle(Theme.accent)
             }
@@ -170,10 +210,14 @@ struct TodayView: View {
                     Text("Today's score")
                         .font(.caption)
                         .foregroundStyle(.secondary)
-                    Text(profile.totalScore, format: .number.precision(.fractionLength(1)))
+                    Text(displayedTotal, format: .number.precision(.fractionLength(1)))
                         .font(.system(size: 28, weight: .bold, design: .rounded))
                         .foregroundStyle(Theme.accent)
+                        .contentTransition(.numericText(value: displayedTotal))
                 }
+                Text("\(3 - completedCount) to go")
+                    .font(.caption2.weight(.semibold))
+                    .foregroundStyle(.secondary)
                 shareLink(for: profile, style: .bordered)
             }
             .frame(maxWidth: .infinity)
@@ -183,18 +227,24 @@ struct TodayView: View {
 
         default:
             VStack(spacing: 10) {
-                Text("Daily Blipz complete")
+                Label("Daily Blipz complete", systemImage: "checkmark.seal.fill")
                     .font(.headline)
                     .foregroundStyle(Theme.success)
-                Text(profile.totalScore, format: .number.precision(.fractionLength(1)))
+                Text(displayedTotal, format: .number.precision(.fractionLength(1)))
                     .font(.system(size: 32, weight: .bold, design: .rounded))
                     .foregroundStyle(Theme.accent)
+                    .contentTransition(.numericText(value: displayedTotal))
+                Text("Come back tomorrow for a new Blip")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
                 shareLink(for: profile, style: .prominent)
             }
             .frame(maxWidth: .infinity)
             .padding(16)
             .background(Theme.success.opacity(0.1), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
             .accessibilityElement(children: .combine)
+            .transition(.scale(scale: 0.94).combined(with: .opacity))
+            .animation(reduceMotion ? nil : .spring(response: 0.5, dampingFraction: 0.7), value: completedCount)
         }
     }
 
@@ -243,6 +293,11 @@ private struct TodayHeader: View {
     let streak: Int
     @ScaledMetric(relativeTo: .title2) private var titleFontSize: CGFloat = 22
 
+    // A modest, bounded list rather than open-ended math — only real streak values the
+    // backend already reports, no invented "percentile"/"rank"-style data.
+    private static let milestones: Set<Int> = [3, 7, 14, 21, 30, 50, 75, 100, 150, 200, 365]
+    private var isMilestone: Bool { Self.milestones.contains(streak) }
+
     var body: some View {
         HStack(alignment: .top) {
             VStack(alignment: .leading, spacing: 2) {
@@ -256,14 +311,22 @@ private struct TodayHeader: View {
             Spacer()
 
             if streak > 0 {
-                HStack(spacing: 4) {
-                    Image(systemName: "flame.fill")
-                        .foregroundStyle(Theme.streak)
-                    Text("\(streak)")
-                        .font(.headline)
+                VStack(alignment: .trailing, spacing: 2) {
+                    HStack(spacing: 4) {
+                        Image(systemName: "flame.fill")
+                            .font(isMilestone ? .title3 : .body)
+                            .foregroundStyle(Theme.streak)
+                        Text("\(streak)")
+                            .font(isMilestone ? .title3.weight(.bold) : .headline)
+                    }
+                    if isMilestone {
+                        Text("Streak milestone!")
+                            .font(.caption2.weight(.semibold))
+                            .foregroundStyle(Theme.streak)
+                    }
                 }
                 .accessibilityElement(children: .combine)
-                .accessibilityLabel("\(streak) day streak")
+                .accessibilityLabel(isMilestone ? "\(streak) day streak, a milestone" : "\(streak) day streak")
             }
         }
         .accessibilityElement(children: .combine)
@@ -321,13 +384,18 @@ private struct DailyProgressTracker: View {
 private struct ShimmerPlaceholder: View {
     let reduceMotion: Bool
     var caption: String?
+    // Distinguishes "still loading, be curious" from "this genuinely failed" — see
+    // heroImage's .failure phase — so a real error never gets dressed up as mystery.
+    var isError: Bool = false
     @State private var animate = false
 
     var body: some View {
         RoundedRectangle(cornerRadius: 14, style: .continuous)
             .fill(
                 LinearGradient(
-                    colors: [Theme.accent.opacity(0.18), TodayAccent.maths.opacity(0.14), Theme.accent.opacity(0.18)],
+                    colors: isError
+                        ? [Color.secondary.opacity(0.15), Color.secondary.opacity(0.1)]
+                        : [Theme.accent.opacity(0.18), TodayAccent.maths.opacity(0.14), Theme.accent.opacity(0.18)],
                     startPoint: .topLeading, endPoint: .bottomTrailing
                 )
             )
@@ -335,7 +403,7 @@ private struct ShimmerPlaceholder: View {
             .overlay(captionOverlay)
             .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
             .onAppear {
-                guard !reduceMotion else { return }
+                guard !reduceMotion, !isError else { return }
                 withAnimation(.linear(duration: 1.3).repeatForever(autoreverses: false)) {
                     animate = true
                 }
@@ -344,23 +412,41 @@ private struct ShimmerPlaceholder: View {
 
     private var shimmerSweep: some View {
         LinearGradient(
-            colors: [.clear, Theme.accent.opacity(0.25), .clear],
+            colors: [.clear, (isError ? Color.secondary : Theme.accent).opacity(0.2), .clear],
             startPoint: .leading, endPoint: .trailing
         )
         .rotationEffect(.degrees(12))
-        .offset(x: reduceMotion ? 0 : (animate ? 240 : -240))
+        .offset(x: reduceMotion || isError ? 0 : (animate ? 240 : -240))
     }
 
     @ViewBuilder
     private var captionOverlay: some View {
-        if let caption {
+        if isError {
             VStack(spacing: 4) {
-                Image(systemName: "sparkles")
+                Image(systemName: "photo.badge.exclamationmark")
                     .font(.caption)
-                Text(caption)
+                Text("Couldn't load image")
                     .font(.caption2.weight(.medium))
             }
-            .foregroundStyle(Theme.accent.opacity(0.75))
+            .foregroundStyle(.secondary)
+        } else {
+            // A large, faint "?" turns the wait itself into part of the mystery —
+            // "what did AI create today?" — rather than looking like a stalled spinner.
+            ZStack {
+                Text("?")
+                    .font(.system(size: 44, weight: .black, design: .rounded))
+                    .foregroundStyle(Theme.accent.opacity(0.12))
+
+                if let caption {
+                    VStack(spacing: 4) {
+                        Image(systemName: "sparkles")
+                            .font(.caption)
+                        Text(caption)
+                            .font(.caption2.weight(.medium))
+                    }
+                    .foregroundStyle(Theme.accent.opacity(0.75))
+                }
+            }
         }
     }
 }
@@ -402,7 +488,9 @@ private struct HeroGameWidget: View {
                     Text(String(format: "%.1f / 10", score))
                         .font(.headline)
                         .foregroundStyle(TodayAccent.guess)
-                    Text("Completed")
+                    // Checkmark, not just color, carries "completed" — see Part 4's
+                    // accessibility pass: state should never rely on color alone.
+                    Label("Completed", systemImage: "checkmark.circle.fill")
                         .font(.caption.weight(.semibold))
                         .foregroundStyle(Theme.success)
                 } else {
@@ -432,8 +520,9 @@ private struct HeroGameWidget: View {
                     switch phase {
                     case .success(let image):
                         image.resizable().scaledToFill()
+                            .transition(reduceMotion ? .identity : .opacity.combined(with: .scale(scale: 0.97)))
                     case .failure:
-                        ShimmerPlaceholder(reduceMotion: reduceMotion, caption: nil)
+                        ShimmerPlaceholder(reduceMotion: reduceMotion, isError: true)
                     default:
                         ShimmerPlaceholder(reduceMotion: reduceMotion, caption: "Generating today's Blip…")
                     }
@@ -442,13 +531,27 @@ private struct HeroGameWidget: View {
                 ShimmerPlaceholder(reduceMotion: reduceMotion, caption: "Generating today's Blip…")
             }
         }
-        .frame(height: 100)
+        .animation(reduceMotion ? nil : .easeOut(duration: 0.5), value: imageUrl)
+        .frame(height: 132)
         .frame(maxWidth: .infinity)
         .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
         .overlay(
-            LinearGradient(colors: [.clear, .black.opacity(0.18)], startPoint: .top, endPoint: .bottom)
+            LinearGradient(colors: [.clear, .black.opacity(0.22)], startPoint: .top, endPoint: .bottom)
                 .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
         )
+        .overlay(alignment: .topLeading) {
+            // A small "event" marker on the image itself — this is *today's* Blip, a
+            // one-off, not generic artwork — reinforced without adding new copy weight
+            // elsewhere on the card.
+            Text("TODAY'S BLIP")
+                .font(.caption2.weight(.bold))
+                .tracking(0.5)
+                .foregroundStyle(.white)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .background(.black.opacity(0.32), in: Capsule())
+                .padding(8)
+        }
         .accessibilityHidden(true)
     }
 }
@@ -475,12 +578,20 @@ private struct CompactGameWidget: View {
                 .font(.caption2)
                 .foregroundStyle(.secondary)
 
-            Text(state == .completed ? "Completed" : "Play")
-                .font(.caption2.weight(.bold))
-                .foregroundStyle(.white)
-                .padding(.horizontal, 10)
-                .padding(.vertical, 4)
-                .background(Capsule().fill(tint))
+            // Checkmark, not just color, carries "completed" — state should never rely
+            // on color alone (Part 4's accessibility pass).
+            HStack(spacing: 3) {
+                if state == .completed {
+                    Image(systemName: "checkmark")
+                        .font(.caption2.weight(.bold))
+                }
+                Text(state == .completed ? "Completed" : "Play")
+                    .font(.caption2.weight(.bold))
+            }
+            .foregroundStyle(.white)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 4)
+            .background(Capsule().fill(tint))
         }
         .padding(12)
         .frame(maxWidth: .infinity, alignment: .leading)
