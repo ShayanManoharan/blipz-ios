@@ -9,6 +9,7 @@ final class AuthManager {
     let client: SupabaseClient
     private(set) var userId: String?
     private(set) var isReady = false
+    private(set) var signInFailed = false
 
     private init() {
         client = SupabaseClient(supabaseURL: Config.supabaseURL, supabaseKey: Config.supabaseAnonKey)
@@ -17,14 +18,17 @@ final class AuthManager {
     /// Restores an existing session, or signs in anonymously if there isn't one.
     /// Call once at app launch, before showing any game content.
     func signInIfNeeded() async {
+        signInFailed = false
         if let session = try? await client.auth.session {
             userId = session.user.id.uuidString
+            isReady = true
         } else if let session = try? await client.auth.signInAnonymously() {
             userId = session.user.id.uuidString
+            isReady = true
         } else {
             print("Blipz: anonymous sign-in failed")
+            signInFailed = true
         }
-        isReady = true
     }
 
     /// Fetched fresh on every call (not cached) since anonymous tokens expire/rotate.
