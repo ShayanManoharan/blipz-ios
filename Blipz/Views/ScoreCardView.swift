@@ -17,9 +17,9 @@ struct ScoreCardView: View {
             }
 
             VStack(spacing: 10) {
-                ScoreCardRow(emoji: "🔢", label: "Maths", value: "\(profile.mathsScore)/20")
-                ScoreCardRow(emoji: "🖼️", label: "Guess", value: String(format: "%.1f/10", profile.guessScore))
-                ScoreCardRow(emoji: "❓", label: "Trivia", value: "\(profile.triviaScore)/5")
+                ScoreCardRow(game: .maths, isCompleted: profile.mathsCompleted, label: "Maths", value: "\(profile.mathsScore)/20")
+                ScoreCardRow(game: .guess, isCompleted: profile.guessCompleted, label: "Guess", value: String(format: "%.1f/10", profile.guessScore))
+                ScoreCardRow(game: .trivia, isCompleted: profile.triviaCompleted, label: "Trivia", value: "\(profile.triviaScore)/5")
             }
 
             Divider()
@@ -42,13 +42,14 @@ struct ScoreCardView: View {
 }
 
 private struct ScoreCardRow: View {
-    let emoji: String
+    let game: BlipzGame
+    let isCompleted: Bool
     let label: String
     let value: String
 
     var body: some View {
         HStack {
-            Text(emoji)
+            BlipzGameEmblem(game: game, size: 22, isCompleted: isCompleted)
             Text(label)
             Spacer()
             Text(value).bold()
