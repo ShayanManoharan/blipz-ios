@@ -21,7 +21,7 @@ struct MathGameView: View {
 
             if let error = viewModel.errorMessage {
                 Text(error)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Theme.error)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 40)
             }
@@ -53,6 +53,7 @@ struct MathGameView: View {
 
             if viewModel.isLoading {
                 ProgressView()
+                    .accessibilityLabel("Loading today's problems")
             } else {
                 Button("Play") {
                     answerFieldFocused = true

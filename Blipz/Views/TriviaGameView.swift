@@ -17,11 +17,12 @@ struct TriviaGameView: View {
                 questionCard(question)
             } else if let error = viewModel.errorMessage {
                 Text(error)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Theme.error)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 40)
             } else if viewModel.isLoading {
                 ProgressView()
+                    .accessibilityLabel("Loading today's trivia")
             }
         }
         .padding()
@@ -69,6 +70,7 @@ struct TriviaGameView: View {
                     }
                     .buttonStyle(OptionButtonStyle(state: selectedOption == option ? .selected : .normal))
                     .disabled(selectedOption != nil)
+                    .accessibilityAddTraits(selectedOption == option ? .isSelected : [])
                 }
             }
         }
@@ -128,7 +130,7 @@ private struct TriviaReviewCard: View {
                     .font(.caption.weight(.bold))
                     .foregroundStyle(.secondary)
                 Image(systemName: item.isCorrect ? "checkmark.circle.fill" : "xmark.circle.fill")
-                    .foregroundStyle(item.isCorrect ? Theme.success : .red)
+                    .foregroundStyle(item.isCorrect ? Theme.success : Theme.error)
             }
             Text(item.question)
                 .font(.subheadline.weight(.semibold))
@@ -172,7 +174,7 @@ private struct TriviaReviewCard: View {
         .padding(.vertical, 8)
         .background(
             RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .fill(isCorrectAnswer ? Theme.success : (isUserWrongPick ? .red : Theme.cardBackground))
+                .fill(isCorrectAnswer ? Theme.success : (isUserWrongPick ? Theme.error : Theme.cardBackground))
         )
         .overlay(
             RoundedRectangle(cornerRadius: 10, style: .continuous)

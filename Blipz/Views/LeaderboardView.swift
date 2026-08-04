@@ -26,9 +26,10 @@ struct LeaderboardView: View {
 
                 if viewModel.isLoading {
                     ProgressView()
+                        .accessibilityLabel("Loading leaderboard")
                 } else if let error = viewModel.errorMessage {
                     Text(error)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Theme.error)
                 } else if entries.isEmpty {
                     emptyState
                 } else {
@@ -206,13 +207,15 @@ private struct PodiumView: View {
                 .fill(medalColor(entry.rank).opacity(0.25))
                 .frame(height: height)
         }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Rank \(entry.rank), \(entry.username), \(entry.totalScore.formatted(.number.precision(.fractionLength(1)))) points")
     }
 
     private func medalColor(_ rank: Int) -> Color {
         switch rank {
-        case 1: return Color(red: 0.85, green: 0.65, blue: 0.13)
-        case 2: return Color(white: 0.6)
-        case 3: return Color(red: 0.72, green: 0.45, blue: 0.2)
+        case 1: return Theme.gold
+        case 2: return Theme.silver
+        case 3: return Theme.bronze
         default: return Theme.accent
         }
     }

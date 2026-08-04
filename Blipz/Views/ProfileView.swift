@@ -13,7 +13,7 @@ struct ProfileView: View {
 
                     HStack(spacing: 16) {
                         StatTile(icon: "flame.fill", tint: Theme.streak, label: "Current streak", value: "\(profile.currentStreak)")
-                        StatTile(icon: "trophy.fill", tint: Color(red: 0.85, green: 0.65, blue: 0.13), label: "Longest streak", value: "\(profile.longestStreak)")
+                        StatTile(icon: "trophy.fill", tint: Theme.gold, label: "Longest streak", value: "\(profile.longestStreak)")
                     }
 
                     todayCard(profile)
@@ -31,9 +31,10 @@ struct ProfileView: View {
                     Spacer()
                 } else if let error = viewModel.errorMessage {
                     Text(error)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Theme.error)
                 } else if viewModel.isLoading {
                     ProgressView()
+                        .accessibilityLabel("Loading profile")
                 }
             }
             .padding()
