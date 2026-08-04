@@ -6,10 +6,14 @@ final class GuessGameViewModel {
     private(set) var imageUrl: URL?
     var guessText = ""
     private(set) var result: GuessSubmitResponse?
+    // Content fetch (loadDailyContent) and submission (performSubmit) are distinct
+    // phases with distinct UI — kept as separate flags so the View never shows
+    // submission-scoring copy while still loading the image, or vice versa.
     private(set) var isLoading = false
+    private(set) var isSubmitting = false
     // True once the backend has told us another request is already scoring this
     // attempt (HTTP 202) and we're waiting it out — distinct from the brief
-    // `isLoading` window of a normal single round trip, so the UI can say "this is
+    // `isSubmitting` window of a normal single round trip, so the UI can say "this is
     // taking a bit longer than usual" instead of just showing the same spinner text.
     private(set) var isScoring = false
     private(set) var errorMessage: String?
@@ -38,7 +42,7 @@ final class GuessGameViewModel {
             let content: DailyContent = try await APIClient.shared.get("games/daily-content")
             imageUrl = URL(string: content.imageUrl)
         } catch {
-            errorMessage = "No daily content available yet. Generate it on the backend first."
+            errorMessage = "Couldn't load today's Blip. \(error.friendlyMessage)"
         }
         isLoading = false
     }
@@ -53,7 +57,7 @@ final class GuessGameViewModel {
     // self]` means the task holds no strong reference to this view model either — it
     // cannot keep it alive past when SwiftUI would otherwise release it.
     func submit() {
-        guard !guessText.isEmpty, !isLoading else { return }
+        guard !guessText.isEmpty, !isSubmitting else { return }
         submissionTask = Task { [weak self] in
             await self?.performSubmit()
         }
@@ -65,7 +69,7 @@ final class GuessGameViewModel {
 
     private func performSubmit() async {
         let submittedGuess = guessText
-        isLoading = true
+        isSubmitting = true
         isScoring = false
         errorMessage = nil
 
@@ -99,10 +103,10 @@ final class GuessGameViewModel {
             // submittedGuess/guessText is intentionally left untouched here — a timeout
             // or transient error must not lose what the user typed; they can just tap
             // submit again.
-            errorMessage = "Failed to submit guess: \(error.localizedDescription)"
+            errorMessage = "Couldn't submit your guess. \(error.friendlyMessage)"
         }
 
         isScoring = false
-        isLoading = false
+        isSubmitting = false
     }
 }

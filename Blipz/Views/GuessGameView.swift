@@ -22,12 +22,13 @@ struct GuessGameView: View {
 
                 if let error = viewModel.errorMessage {
                     Text(error)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Theme.error)
                         .multilineTextAlignment(.center)
                 }
 
                 if viewModel.result == nil, viewModel.imageUrl == nil, viewModel.isLoading {
                     ProgressView()
+                        .accessibilityLabel("Loading today's Blip")
                 }
             }
             .padding()
@@ -69,23 +70,43 @@ struct GuessGameView: View {
                 .frame(width: 260, height: 260)
                 .accessibilityHidden(true)
 
-            AsyncImage(url: viewModel.imageUrl) { phase in
-                switch phase {
-                case .success(let image):
-                    image
-                        .resizable()
-                        .scaledToFit()
-                        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
-                        .shadow(color: Theme.accent.opacity(0.25), radius: 20, y: 10)
-                        .accessibilityLabel("Today's mystery image")
-                case .failure:
-                    Color.gray.opacity(0.2)
-                        .frame(height: 300)
-                        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
-                        .overlay(Text("Couldn't load image"))
-                default:
-                    ProgressView()
-                        .frame(height: 300)
+            if viewModel.imageUrl == nil, !viewModel.isLoading, viewModel.errorMessage != nil {
+                // loadDailyContent() failed and never produced a URL — AsyncImage(url:
+                // nil) would stay stuck in .empty forever, so this branch is the only
+                // way to ever leave the spinner state.
+                Color.gray.opacity(0.2)
+                    .frame(height: 300)
+                    .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+                    .overlay(
+                        VStack(spacing: 8) {
+                            Image(systemName: "photo.badge.exclamationmark")
+                                .font(.title2)
+                                .foregroundStyle(.secondary)
+                            Text("Couldn't load today's Blip")
+                                .foregroundStyle(.secondary)
+                        }
+                    )
+                    .accessibilityElement(children: .combine)
+            } else {
+                AsyncImage(url: viewModel.imageUrl) { phase in
+                    switch phase {
+                    case .success(let image):
+                        image
+                            .resizable()
+                            .scaledToFit()
+                            .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+                            .shadow(color: Theme.accent.opacity(0.25), radius: 20, y: 10)
+                            .accessibilityLabel("Today's mystery image")
+                    case .failure:
+                        Color.gray.opacity(0.2)
+                            .frame(height: 300)
+                            .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+                            .overlay(Text("Couldn't load image"))
+                    default:
+                        ProgressView()
+                            .frame(height: 300)
+                            .accessibilityLabel("Loading today's Blip")
+                    }
                 }
             }
         }
@@ -101,7 +122,7 @@ struct GuessGameView: View {
                 .textFieldStyle(.roundedBorder)
                 .lineLimit(3...5)
 
-            if viewModel.isLoading {
+            if viewModel.isSubmitting {
                 HStack(spacing: 8) {
                     ProgressView()
                     Text(viewModel.isScoring ? "Scoring your guess… this can take a few seconds" : "AI is judging your guess…")
