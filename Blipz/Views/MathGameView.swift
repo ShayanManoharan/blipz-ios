@@ -31,6 +31,7 @@ struct MathGameView: View {
             }
         }
         .screenBackground()
+        .toolbar(.hidden, for: .navigationBar)
         .task {
             await viewModel.loadDailyContent()
             await profileViewModel.loadProfile()
@@ -40,19 +41,32 @@ struct MathGameView: View {
         }
     }
 
+    // One timer for the whole round (startDate is set once by viewModel.start() and
+    // never reset per-question) — counts down from roundSeconds rather than up, matching
+    // the "20 problems, 90 seconds" framing already used on Today's up-next card.
+    private static let roundSeconds: TimeInterval = 90
+
     @ViewBuilder
     private var timer: some View {
         if let startDate = viewModel.startDate, viewModel.phase == .playing {
             TimelineView(.periodic(from: startDate, by: 0.1)) { context in
                 let elapsed = context.date.timeIntervalSince(startDate)
-                Text(elapsedString(elapsed))
+                let remaining = max(0, Self.roundSeconds - elapsed)
+                Text(countdownString(remaining))
                     .font(.system(.subheadline, design: .monospaced))
                     .foregroundStyle(Theme.accent)
-                    .accessibilityLabel("Elapsed time: \(String(format: "%.1f", elapsed)) seconds")
+                    .lineLimit(1)
+                    .fixedSize()
+                    .accessibilityLabel("\(Int(remaining)) seconds remaining")
             }
         } else {
             Color.clear
         }
+    }
+
+    private func countdownString(_ seconds: TimeInterval) -> String {
+        let total = Int(seconds.rounded())
+        return String(format: "%d:%02d", total / 60, total % 60)
     }
 
     private var loadingState: some View {
@@ -99,6 +113,10 @@ struct MathGameView: View {
 
             keypad
         }
+        // Without this, the VStack only ever reports its own minimum height upward and
+        // the Spacers above/below the problem collapse to `minLength` instead of sharing
+        // the screen's actual remaining space — the "dead zone" bug.
+        .frame(maxHeight: .infinity)
         .animation(.easeOut(duration: 0.2), value: viewModel.currentDisplayIndex)
     }
 
@@ -121,8 +139,11 @@ struct MathGameView: View {
         .padding(.top, 8)
     }
 
+    // A thin sliver once the round has started, even at 0 of 20 — a fully empty-looking
+    // bar reads as broken, not "not started yet".
     private var progressFraction: CGFloat {
-        viewModel.totalCount > 0 ? CGFloat(viewModel.currentDisplayIndex) / CGFloat(viewModel.totalCount) : 0
+        guard viewModel.totalCount > 0 else { return 0 }
+        return max(0.04, CGFloat(viewModel.currentDisplayIndex) / CGFloat(viewModel.totalCount))
     }
 
     // MARK: - Keypad
