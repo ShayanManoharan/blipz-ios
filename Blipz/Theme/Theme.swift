@@ -85,13 +85,18 @@ extension View {
 }
 
 struct PrimaryButtonStyle: ButtonStyle {
+    // .disabled() alone doesn't grey out a custom ButtonStyle's own fill/text colors —
+    // that has to be done explicitly, or a disabled button stays fully green (the "Lock
+    // it in with nothing selected" bug).
+    @Environment(\.isEnabled) private var isEnabled
+
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .font(.headline)
-            .foregroundStyle(.white)
+            .foregroundStyle(isEnabled ? .white : Color(.tertiaryLabel))
             .padding(.vertical, 14)
             .frame(maxWidth: .infinity)
-            .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(Theme.accent))
+            .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(isEnabled ? Theme.accent : Color(.systemGray5)))
             .opacity(configuration.isPressed ? 0.85 : 1)
             .scaleEffect(configuration.isPressed ? 0.98 : 1)
     }
