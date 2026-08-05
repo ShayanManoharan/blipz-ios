@@ -5,55 +5,36 @@ struct ScoreCardView: View {
     let dateLabel: String
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            HStack {
-                Text("Blipz")
-                    .font(.system(size: 22, weight: .heavy, design: .rounded))
-                    .foregroundStyle(Theme.accent)
-                Spacer()
-                Text(dateLabel)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
+        VStack(alignment: .leading, spacing: 14) {
+            Text("BLIPZ · \(dateLabel.uppercased())")
+                .font(.system(size: 12, weight: .bold, design: .rounded))
+                .tracking(1.5)
 
-            VStack(spacing: 10) {
-                ScoreCardRow(game: .maths, isCompleted: profile.mathsCompleted, label: "Maths", value: "\(profile.mathsScore)/20")
-                ScoreCardRow(game: .guess, isCompleted: profile.guessCompleted, label: "Guess", value: String(format: "%.1f/10", profile.guessScore))
-                ScoreCardRow(game: .trivia, isCompleted: profile.triviaCompleted, label: "Trivia", value: "\(profile.triviaScore)/5")
-            }
+            Text(profile.totalScore, format: .number.precision(.fractionLength(1)))
+                .font(.system(size: 40, weight: .bold, design: .rounded))
 
-            Divider()
-
-            HStack {
-                Label("\(profile.currentStreak)-day streak", systemImage: "flame.fill")
-                    .foregroundStyle(Theme.streak)
-                    .font(.subheadline.weight(.semibold))
-                Spacer()
-                Text("Total: \(profile.totalScore, format: .number.precision(.fractionLength(1)))")
-                    .font(.headline)
-                    .foregroundStyle(Theme.accent)
+            // The only place emoji appear in the product — a Wordle-style proportional
+            // square row per game, guess/maths/trivia in that fixed order.
+            VStack(alignment: .leading, spacing: 4) {
+                squareRow(score: profile.guessScore, max: 10)
+                squareRow(score: Double(profile.mathsScore), max: 20)
+                squareRow(score: Double(profile.triviaScore), max: 5)
             }
+            .font(.system(size: 15))
+
+            Text("guess · maths · trivia")
+                .font(.caption2)
+                .foregroundStyle(.secondary)
         }
-        .padding(24)
-        .frame(width: 320)
-        .background(Theme.cardBackground, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
-        .shadow(color: .black.opacity(0.15), radius: 16, y: 8)
+        .padding(20)
+        .frame(width: 230, alignment: .leading)
+        .outlinedContainer(emphasized: true)
     }
-}
 
-private struct ScoreCardRow: View {
-    let game: BlipzGame
-    let isCompleted: Bool
-    let label: String
-    let value: String
-
-    var body: some View {
-        HStack {
-            BlipzGameEmblem(game: game, size: 22, isCompleted: isCompleted)
-            Text(label)
-            Spacer()
-            Text(value).bold()
-        }
+    private func squareRow(score: Double, max: Double) -> some View {
+        let filled = max > 0 ? Int((score / max * 5).rounded()) : 0
+        let clamped = min(5, Swift.max(0, filled))
+        return Text(String(repeating: "🟩", count: clamped) + String(repeating: "⬛", count: 5 - clamped))
     }
 }
 
