@@ -4,176 +4,250 @@ struct GuessGameView: View {
     @State private var viewModel = GuessGameViewModel()
     @State private var profileViewModel = ProfileViewModel()
     @State private var displayedScore: Double = 0
-    @Environment(\.displayScale) private var displayScale
-    @ScaledMetric(relativeTo: .title) private var headerFontSize: CGFloat = 28
-    @ScaledMetric(relativeTo: .largeTitle) private var scoreFontSize: CGFloat = 48
+    @Environment(\.dismiss) private var dismiss
 
     var body: some View {
-        ScrollView {
-            VStack(spacing: 20) {
-                header
+        VStack(spacing: 0) {
+            GameModalBar(title: viewModel.result == nil ? "GUESS THE PROMPT" : "GUESS · RESULT") {
+                Text("1/3")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
+            .padding(.horizontal, 14)
+            .padding(.top, 4)
 
+            ScrollView {
                 if let result = viewModel.result {
-                    completedContent(result: result)
+                    resultContent(result)
                 } else {
-                    imageCard
-                    composer
-                }
-
-                if let error = viewModel.errorMessage {
-                    Text(error)
-                        .foregroundStyle(Theme.error)
-                        .multilineTextAlignment(.center)
-                }
-
-                if viewModel.result == nil, viewModel.imageUrl == nil, viewModel.isLoading {
-                    ProgressView()
-                        .accessibilityLabel("Loading today's Blip")
+                    playContent
                 }
             }
-            .padding()
         }
         .screenBackground()
-        .animation(.spring(response: 0.4, dampingFraction: 0.7), value: viewModel.result != nil)
         .task {
             await viewModel.loadDailyContent()
+            await profileViewModel.loadProfile()
         }
         .onDisappear {
             viewModel.cancelSubmission()
         }
         .onChange(of: viewModel.result?.score) { _, newScore in
             guard let newScore else { return }
-            Task { await profileViewModel.loadProfile() }
             displayedScore = 0
-            withAnimation(.easeOut(duration: 1.2)) {
-                displayedScore = newScore
-            }
+            withAnimation(.easeOut(duration: 0.6)) { displayedScore = newScore }
         }
     }
 
-    private var header: some View {
-        VStack(spacing: 4) {
-            Text("Today's Blip")
-                .font(.system(size: headerFontSize, weight: .bold, design: .rounded))
-            Text("Everyone sees the same image.")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-        }
-        .accessibilityElement(children: .combine)
-    }
+    // MARK: - Play (§3)
 
-    private var imageCard: some View {
-        ZStack {
-            Circle()
-                .fill(Theme.accent.opacity(0.25))
-                .blur(radius: 40)
-                .frame(width: 260, height: 260)
-                .accessibilityHidden(true)
+    private var playContent: some View {
+        VStack(spacing: 20) {
+            imageView(aspectRatio: 4.0 / 5.0)
 
-            if viewModel.imageUrl == nil, !viewModel.isLoading, viewModel.errorMessage != nil {
-                // loadDailyContent() failed and never produced a URL — AsyncImage(url:
-                // nil) would stay stuck in .empty forever, so this branch is the only
-                // way to ever leave the spinner state.
-                Color.gray.opacity(0.2)
-                    .frame(height: 300)
-                    .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+            VStack(alignment: .leading, spacing: 16) {
+                Text("What prompt made this?")
+                    .font(.title3.weight(.medium))
+
+                TextField("type your guess…", text: $viewModel.guessText, axis: .vertical)
+                    .textFieldStyle(.plain)
+                    .lineLimit(3...6)
+                    .padding(12)
                     .overlay(
-                        VStack(spacing: 8) {
-                            Image(systemName: "photo.badge.exclamationmark")
-                                .font(.title2)
-                                .foregroundStyle(.secondary)
-                            Text("Couldn't load today's Blip")
-                                .foregroundStyle(.secondary)
-                        }
+                        RoundedRectangle(cornerRadius: 10, style: .continuous)
+                            .strokeBorder(Color.primary.opacity(0.85), lineWidth: 1.5)
                     )
-                    .accessibilityElement(children: .combine)
-            } else {
-                AsyncImage(url: viewModel.imageUrl) { phase in
-                    switch phase {
-                    case .success(let image):
-                        image
-                            .resizable()
-                            .scaledToFit()
-                            .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
-                            .shadow(color: Theme.accent.opacity(0.25), radius: 20, y: 10)
-                            .accessibilityLabel("Today's mystery image")
-                    case .failure:
-                        Color.gray.opacity(0.2)
-                            .frame(height: 300)
-                            .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
-                            .overlay(Text("Couldn't load image"))
-                    default:
-                        ProgressView()
-                            .frame(height: 300)
-                            .accessibilityLabel("Loading today's Blip")
-                    }
+
+                Text("One shot. Scored on how close you get.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                if let error = viewModel.errorMessage {
+                    Text(error)
+                        .font(.caption)
+                        .foregroundStyle(Theme.error)
                 }
+
+                submitButton
             }
+            .padding(.horizontal, 18)
         }
+        .padding(.top, 16)
+        .padding(.bottom, 24)
     }
 
-    private var composer: some View {
-        VStack(spacing: 12) {
-            Text("What do you see?")
-                .font(.subheadline.weight(.semibold))
-                .frame(maxWidth: .infinity, alignment: .leading)
-
-            TextField("Describe the image…", text: $viewModel.guessText, axis: .vertical)
-                .textFieldStyle(.roundedBorder)
-                .lineLimit(3...5)
-
+    private var submitButton: some View {
+        Group {
             if viewModel.isSubmitting {
                 HStack(spacing: 8) {
                     ProgressView()
-                    Text(viewModel.isScoring ? "Scoring your guess… this can take a few seconds" : "AI is judging your guess…")
+                    Text(viewModel.isScoring ? "Scoring your guess…" : "Submitting…")
                         .foregroundStyle(.secondary)
-                        .accessibilityLabel(viewModel.isScoring ? "Still scoring your guess, please wait" : "AI is judging your guess")
                 }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 14)
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel(viewModel.isScoring ? "Scoring your guess, please wait" : "Submitting your guess")
             } else {
-                Button("Lock In My Guess") {
+                Button("Submit guess") {
                     Haptics.light()
                     viewModel.submit()
                 }
                 .buttonStyle(PrimaryButtonStyle())
-                .disabled(viewModel.guessText.isEmpty)
+                .disabled(viewModel.guessText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
             }
         }
-        .cardStyle()
     }
 
-    private func completedContent(result: GuessSubmitResponse) -> some View {
-        VStack(spacing: 16) {
-            Text("Score")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
+    // MARK: - Result / reveal (§4)
 
-            HStack(alignment: .firstTextBaseline, spacing: 6) {
-                Text(displayedScore, format: .number.precision(.fractionLength(1)))
-                    .font(.system(size: scoreFontSize, weight: .bold, design: .rounded))
-                    .foregroundStyle(Theme.accent)
-                    .contentTransition(.numericText(value: displayedScore))
-                Text("/ 10")
-                    .font(.title3)
-                    .foregroundStyle(.secondary)
+    private func resultContent(_ result: GuessSubmitResponse) -> some View {
+        VStack(spacing: 20) {
+            imageView(aspectRatio: 4.0 / 2.6)
+
+            scoreBlock(result)
+
+            VStack(alignment: .leading, spacing: 16) {
+                labeledText(overline: "YOU SAID", overlineColor: .secondary, text: result.guess)
+                labeledText(overline: "ACTUAL PROMPT", overlineColor: Theme.accent, text: result.actualPrompt ?? "—")
             }
-            .accessibilityElement(children: .combine)
-            .accessibilityLabel("Score \(result.score, specifier: "%.1f") out of 10")
+            .padding(.horizontal, 18)
 
-            Text("Your guess: \(result.guess)")
+            nextButton
+                .padding(.horizontal, 18)
+        }
+        .padding(.top, 16)
+        .padding(.bottom, 24)
+    }
+
+    private func scoreBlock(_ result: GuessSubmitResponse) -> some View {
+        VStack(spacing: 4) {
+            Text(displayedScore, format: .number.precision(.fractionLength(1)))
+                .font(.system(size: 52, weight: .bold, design: .rounded))
+                .contentTransition(.numericText(value: displayedScore))
+            Text("out of 10 · \(qualifier(for: result.score))")
+                .font(.caption)
                 .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 22)
+        .outlinedContainer(emphasized: true)
+        .padding(.horizontal, 18)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Score \(result.score, specifier: "%.1f") out of 10, \(qualifier(for: result.score))")
+    }
 
-            if let profile = profileViewModel.profile {
-                let card = ScoreCardRenderer.image(for: profile, displayScale: displayScale)
-                ShareLink(item: card, preview: SharePreview("My Blipz Score", image: card)) {
-                    Label("Share my score", systemImage: "square.and.arrow.up")
+    private func qualifier(for score: Double) -> String {
+        switch score {
+        case 9...10: return "nailed it"
+        case 7..<9: return "close"
+        case 4..<7: return "warm"
+        default: return "not quite"
+        }
+    }
+
+    private func labeledText(overline: String, overlineColor: Color, text: String) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(overline)
+                .font(.caption2.weight(.bold))
+                .tracking(1.2)
+                .foregroundStyle(overlineColor)
+            Text(text)
+                .font(.body)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    // Chains directly into the next unplayed game rather than dumping the player back
+    // on Today — see BlipzGame.nextUnplayed. When Guess is the last unplayed game, the
+    // button just closes back to Today's already-complete recap instead.
+    @ViewBuilder
+    private var nextButton: some View {
+        if let profile = profileViewModel.profile, let next = BlipzGame.guess.nextUnplayed(in: profile) {
+            NavigationLink {
+                nextDestination(next)
+            } label: {
+                Text("Next: \(nextGameLabel(next))")
+            }
+            .buttonStyle(PrimaryButtonStyle())
+            .simultaneousGesture(TapGesture().onEnded { Haptics.light() })
+        } else {
+            Button {
+                Haptics.light()
+                dismiss()
+            } label: {
+                Text("See today's score")
+            }
+            .buttonStyle(PrimaryButtonStyle())
+        }
+    }
+
+    @ViewBuilder
+    private func nextDestination(_ game: BlipzGame) -> some View {
+        switch game {
+        case .maths: MathGameView().toolbar(.hidden, for: .tabBar)
+        case .trivia: TriviaGameView().toolbar(.hidden, for: .tabBar)
+        case .guess: EmptyView()
+        }
+    }
+
+    private func nextGameLabel(_ game: BlipzGame) -> String {
+        switch game {
+        case .maths: return "quick maths"
+        case .trivia: return "trivia"
+        case .guess: return ""
+        }
+    }
+
+    // MARK: - Image (shared between play and result — result uses a shorter crop)
+
+    private func imageView(aspectRatio: CGFloat) -> some View {
+        Group {
+            if let url = viewModel.imageUrl {
+                AsyncImage(url: url) { phase in
+                    switch phase {
+                    case .success(let image):
+                        image.resizable().scaledToFill()
+                    case .failure:
+                        imageFallback
+                    default:
+                        imageLoadingOrFallback
+                    }
                 }
-                .buttonStyle(.bordered)
-                .tint(Theme.accent)
+            } else {
+                imageLoadingOrFallback
             }
         }
-        .cardStyle()
-        .transition(.scale.combined(with: .opacity))
+        .aspectRatio(aspectRatio, contentMode: .fit)
+        .frame(maxWidth: .infinity)
+        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .strokeBorder(Color.primary.opacity(0.85), lineWidth: 1)
+        )
+        .padding(.horizontal, 18)
+        .accessibilityLabel("Today's mystery image")
+    }
+
+    @ViewBuilder
+    private var imageLoadingOrFallback: some View {
+        if viewModel.isLoading {
+            ProgressView()
+                .accessibilityLabel("Loading today's Blip")
+        } else {
+            imageFallback
+        }
+    }
+
+    private var imageFallback: some View {
+        VStack(spacing: 8) {
+            Image(systemName: "photo.badge.exclamationmark")
+                .font(.title2)
+                .foregroundStyle(.secondary)
+            Text("Couldn't load today's Blip")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
     }
 }
 

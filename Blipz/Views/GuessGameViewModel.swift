@@ -45,6 +45,23 @@ final class GuessGameViewModel {
             errorMessage = "Couldn't load today's Blip. \(error.friendlyMessage)"
         }
         isLoading = false
+        await restoreResultIfAlreadyCompleted()
+    }
+
+    // If today's Guess is already done (e.g. reopened from Today's recap), show the
+    // result screen immediately instead of the play composer. A 404 here just means
+    // "not completed yet" — that's the normal path, not an error worth surfacing.
+    private func restoreResultIfAlreadyCompleted() async {
+        guard result == nil else { return }
+        do {
+            let review: GuessReviewResponse = try await APIClient.shared.get("games/guess-review")
+            result = GuessSubmitResponse(
+                userId: "", guess: review.guess, score: review.score, date: review.date,
+                alreadyCompleted: true, actualPrompt: review.actualPrompt
+            )
+        } catch {
+            // Not completed yet today — stay in the play state.
+        }
     }
 
     // guard !isLoading prevents a repeated tap from firing a second submission while
