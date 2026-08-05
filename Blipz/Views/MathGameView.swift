@@ -53,7 +53,7 @@ struct MathGameView: View {
                 let elapsed = context.date.timeIntervalSince(startDate)
                 let remaining = max(0, Self.roundSeconds - elapsed)
                 Text(countdownString(remaining))
-                    .font(.system(.subheadline, design: .monospaced))
+                    .font(.blipzDisplay(size: 17, weight: .medium))
                     .foregroundStyle(Theme.accent)
                     .lineLimit(1)
                     .fixedSize()
@@ -89,7 +89,7 @@ struct MathGameView: View {
             if let problem = viewModel.currentProblem {
                 VStack(spacing: 14) {
                     Text(problem.question)
-                        .font(.system(size: 46, weight: .bold, design: .rounded))
+                        .font(.blipzDisplay(size: 52, weight: .medium))
                         .id(viewModel.currentDisplayIndex)
                         .transition(.opacity)
 

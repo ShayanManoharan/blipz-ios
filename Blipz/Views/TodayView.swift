@@ -164,8 +164,8 @@ struct TodayView: View {
         VStack(spacing: 0) {
             HStack {
                 Text("BLIPZ")
-                    .font(.subheadline.weight(.bold))
-                    .tracking(2)
+                    .font(.blipzDisplay(size: 17, weight: .bold))
+                    .tracking(17 * 0.18)
                 Spacer()
                 Text("streak \(profile.currentStreak) ›")
                     .font(.subheadline)
@@ -255,7 +255,7 @@ struct TodayView: View {
 
             VStack(spacing: 4) {
                 Text(displayedTotal, format: .number.precision(.fractionLength(1)))
-                    .font(.system(size: 56, weight: .bold, design: .rounded))
+                    .font(.blipzDisplay(size: 64, weight: .bold))
                     .contentTransition(.numericText(value: displayedTotal))
                 Text(scoreCaption)
                     .font(.caption)

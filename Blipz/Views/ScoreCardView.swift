@@ -11,7 +11,7 @@ struct ScoreCardView: View {
                 .tracking(1.5)
 
             Text(profile.totalScore, format: .number.precision(.fractionLength(1)))
-                .font(.system(size: 40, weight: .bold, design: .rounded))
+                .font(.blipzDisplay(size: 40, weight: .bold))
 
             // The only place emoji appear in the product — a Wordle-style proportional
             // square row per game, guess/maths/trivia in that fixed order.

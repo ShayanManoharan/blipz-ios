@@ -202,7 +202,7 @@ struct RanksView: View {
             Spacer()
 
             Text(entry.totalScore, format: .number.precision(.fractionLength(1)))
-                .font(.body.weight(mine ? .bold : .regular))
+                .font(.blipzDisplay(size: 17, weight: .medium))
         }
         .padding(.vertical, 10)
         .background(mine ? Theme.accentWash : Color.clear, in: RoundedRectangle(cornerRadius: 10, style: .continuous))

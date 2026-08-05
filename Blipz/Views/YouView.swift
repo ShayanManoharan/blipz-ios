@@ -124,7 +124,7 @@ struct YouView: View {
     private func statTile(value: String, label: String) -> some View {
         VStack(spacing: 4) {
             Text(value)
-                .font(.title2.weight(.semibold))
+                .font(.blipzDisplay(size: 24, weight: .bold))
             Text(label)
                 .font(.caption)
                 .foregroundStyle(.secondary)
@@ -197,7 +197,7 @@ struct YouView: View {
                 .frame(width: size, height: size)
                 .overlay(
                     Text(day.score.map { $0.formatted(.number.precision(.fractionLength(1))) } ?? "—")
-                        .font(.system(size: 17, weight: .semibold))
+                        .font(.blipzDisplay(size: 17, weight: .medium))
                         .foregroundStyle(isToday ? .white : (day.score == nil ? .secondary : .primary))
                 )
             Text(day.label)

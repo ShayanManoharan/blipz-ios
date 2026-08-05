@@ -124,7 +124,7 @@ struct GuessGameView: View {
     private func scoreBlock(_ result: GuessSubmitResponse) -> some View {
         VStack(spacing: 4) {
             Text(displayedScore, format: .number.precision(.fractionLength(1)))
-                .font(.system(size: 52, weight: .bold, design: .rounded))
+                .font(.blipzDisplay(size: 48, weight: .bold))
                 .contentTransition(.numericText(value: displayedScore))
             Text("out of 10 · \(qualifier(for: result.score))")
                 .font(.caption)
