@@ -45,6 +45,7 @@ struct TriviaGameView: View {
             }
         }
         .screenBackground()
+        .toolbar(.hidden, for: .navigationBar)
         .task {
             await viewModel.loadDailyContent()
             await profileViewModel.loadProfile()
@@ -54,10 +55,10 @@ struct TriviaGameView: View {
     // MARK: - Progress (five 3px segments, green for answered)
 
     private var segmentProgress: some View {
-        HStack(spacing: 4) {
+        HStack(spacing: 6) {
             ForEach(0..<max(viewModel.questions.count, 1), id: \.self) { index in
                 Rectangle()
-                    .fill(index < viewModel.currentIndex ? Theme.accent : Theme.hairline)
+                    .fill(index < viewModel.currentIndex ? Theme.accent : Color(.systemGray4))
                     .frame(height: 3)
             }
         }
