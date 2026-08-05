@@ -13,3 +13,9 @@
 // trick below to keep the slashes from being swallowed.
 INFOPLIST_KEY_SupabaseURL = https:$()//$()eqivixkkpkkxijbgaegl.supabase.co
 INFOPLIST_KEY_SupabaseAnonKey = sb_publishable_41Hnq1oKebcUdKwE0f_EgA_SMbrLiWo
+
+// Direction 2a wants the traditional full-width bottom tab bar, not iOS 26's new
+// floating "Liquid Glass" capsule. This flag is Apple's own documented opt-out — it's
+// a stop-gap they've said will be removed in a future iOS 26.x release, at which point
+// this line becomes a no-op and the floating style returns with no way back.
+INFOPLIST_KEY_UIDesignRequiresCompatibility = YES
