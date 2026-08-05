@@ -151,7 +151,7 @@ struct YouView: View {
                     .foregroundStyle(Theme.accent)
             }
 
-            HStack(spacing: 8) {
+            LazyVGrid(columns: Self.historyColumns, spacing: 8) {
                 ForEach(last5Days, id: \.date) { day in
                     historyTile(day)
                 }
@@ -161,6 +161,12 @@ struct YouView: View {
         .padding(.top, 20)
         .padding(.bottom, 20)
     }
+
+    // A plain HStack never gives each tile a concrete width to resolve
+    // .aspectRatio(1, contentMode: .fit) against — they collapsed to near-zero. A
+    // 5-column flexible grid does propose a real per-cell width, so the aspect ratio
+    // below actually produces ~56pt squares instead of tiny dashes.
+    private static let historyColumns = Array(repeating: GridItem(.flexible(), spacing: 8), count: 5)
 
     private var last5Days: [(date: Date, label: String, score: Double?)] {
         let calendar = Calendar.current
@@ -188,7 +194,7 @@ struct YouView: View {
                 .frame(maxWidth: .infinity)
                 .aspectRatio(1, contentMode: .fit)
                 .background(
-                    isToday ? Theme.accent : Theme.hairline.opacity(0.3),
+                    isToday ? Theme.accent : Color(.systemGray5),
                     in: RoundedRectangle(cornerRadius: 8, style: .continuous)
                 )
             Text(day.label)
