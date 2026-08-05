@@ -165,8 +165,13 @@ struct RanksView: View {
         }
     }
 
+    // /leaderboard/friends always includes the caller's own row, even with zero
+    // friends — showing just yourself isn't "populated", it's the empty state with an
+    // extra row, so it's excluded entirely until there's at least one other entry.
     private var entries: [LeaderboardEntry] {
-        scope == .global ? viewModel.globalEntries : viewModel.friendsEntries
+        guard scope == .friends else { return viewModel.globalEntries }
+        let others = viewModel.friendsEntries.filter { !isCurrentUser($0) }
+        return others.isEmpty ? [] : viewModel.friendsEntries
     }
 
     private func isCurrentUser(_ entry: LeaderboardEntry) -> Bool {
