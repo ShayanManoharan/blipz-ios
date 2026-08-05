@@ -150,6 +150,10 @@ struct RanksView: View {
         } else if entries.isEmpty {
             emptyState
         } else {
+            // Dividers stay full-bleed on purpose; each row carries its own 18pt inset
+            // directly (same pattern as titleRow/segmentTabs) so the highlight background
+            // lines up with the title exactly instead of drifting from an ancestor's
+            // padding.
             VStack(spacing: 0) {
                 Divider()
                 ForEach(entries) { entry in
@@ -157,7 +161,6 @@ struct RanksView: View {
                     Divider()
                 }
             }
-            .padding(.horizontal, 18)
 
             if scope == .global {
                 globalTail
@@ -202,8 +205,8 @@ struct RanksView: View {
                 .font(.body.weight(mine ? .bold : .regular))
         }
         .padding(.vertical, 10)
-        .padding(.horizontal, 10)
         .background(mine ? Theme.accentWash : Color.clear, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+        .padding(.horizontal, 18)
         .accessibilityElement(children: .combine)
         .accessibilityLabel(
             "Rank \(entry.rank), \(entry.username)\(mine ? ", you" : ""), "
@@ -255,10 +258,9 @@ struct RanksView: View {
             inviteShareLink(label: "Invite a friend")
                 .buttonStyle(PrimaryButtonStyle())
         }
-        .padding(.horizontal, 18)
         .padding(.top, 24)
         .padding(.bottom, 24)
-        .frame(maxWidth: .infinity)
+        .padding(.horizontal, 18)
     }
 
     // Real, working share sheet (no fabricated invite link/code — the app has no such
