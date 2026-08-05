@@ -1,14 +1,5 @@
 import Foundation
 
-struct Friend: Decodable, Identifiable {
-    let id: String
-    let username: String
-}
-
-struct FriendsListResponse: Decodable {
-    let friends: [Friend]
-}
-
 struct AddFriendRequest: Encodable {
     let friendUsername: String
 }
