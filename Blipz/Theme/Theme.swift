@@ -44,6 +44,14 @@ enum Theme {
     // Wireframe's "hairline" — native separator color, so it's correct in light and
     // dark automatically instead of a hardcoded grey.
     static let hairline = Color(uiColor: .separator)
+
+    // Token table's "Surface" — neutral tile fill (You's 5-day strip). #F2F1ED exactly,
+    // per the addendum's explicit spec, not a native systemGray substitute.
+    static let surface = Color(uiColor: UIColor { trait in
+        trait.userInterfaceStyle == .dark
+            ? UIColor(red: 0.18, green: 0.18, blue: 0.19, alpha: 1)
+            : UIColor(red: 0.949, green: 0.945, blue: 0.929, alpha: 1)
+    })
 }
 
 private struct ScreenBackgroundModifier: ViewModifier {

@@ -151,22 +151,26 @@ struct YouView: View {
                     .foregroundStyle(Theme.accent)
             }
 
-            LazyVGrid(columns: Self.historyColumns, spacing: 8) {
-                ForEach(last5Days, id: \.date) { day in
-                    historyTile(day)
+            // GeometryReader computes a real per-tile width instead of relying on
+            // .aspectRatio(1, contentMode: .fit), which — even inside a flexible grid —
+            // was still resolving against an effectively-unbounded proposed height and
+            // collapsing to a tiny square. This guarantees true ~56pt tiles that also
+            // span the full content width, per the addendum's explicit spec.
+            GeometryReader { geo in
+                let spacing: CGFloat = 8
+                let tileSize = (geo.size.width - spacing * 4) / 5
+                HStack(spacing: spacing) {
+                    ForEach(last5Days, id: \.date) { day in
+                        historyTile(day, size: tileSize)
+                    }
                 }
             }
+            .frame(height: 82)
         }
         .padding(.horizontal, 18)
         .padding(.top, 20)
         .padding(.bottom, 20)
     }
-
-    // A plain HStack never gives each tile a concrete width to resolve
-    // .aspectRatio(1, contentMode: .fit) against — they collapsed to near-zero. A
-    // 5-column flexible grid does propose a real per-cell width, so the aspect ratio
-    // below actually produces ~56pt squares instead of tiny dashes.
-    private static let historyColumns = Array(repeating: GridItem(.flexible(), spacing: 8), count: 5)
 
     private var last5Days: [(date: Date, label: String, score: Double?)] {
         let calendar = Calendar.current
@@ -185,20 +189,19 @@ struct YouView: View {
         return formatter.string(from: date)
     }
 
-    private func historyTile(_ day: (date: Date, label: String, score: Double?)) -> some View {
+    private func historyTile(_ day: (date: Date, label: String, score: Double?), size: CGFloat) -> some View {
         let isToday = Calendar.current.isDateInToday(day.date)
         return VStack(spacing: 6) {
-            Text(day.score.map { $0.formatted(.number.precision(.fractionLength(1))) } ?? "—")
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(isToday ? .white : .primary)
-                .frame(maxWidth: .infinity)
-                .aspectRatio(1, contentMode: .fit)
-                .background(
-                    isToday ? Theme.accent : Color(.systemGray5),
-                    in: RoundedRectangle(cornerRadius: 8, style: .continuous)
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .fill(isToday ? Theme.accent : Theme.surface)
+                .frame(width: size, height: size)
+                .overlay(
+                    Text(day.score.map { $0.formatted(.number.precision(.fractionLength(1))) } ?? "—")
+                        .font(.system(size: 17, weight: .semibold))
+                        .foregroundStyle(isToday ? .white : (day.score == nil ? .secondary : .primary))
                 )
             Text(day.label)
-                .font(.caption2)
+                .font(.system(size: 11))
                 .foregroundStyle(.secondary)
         }
         .accessibilityElement(children: .combine)
