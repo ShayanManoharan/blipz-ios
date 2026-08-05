@@ -74,7 +74,7 @@ struct GuessGameView: View {
             .padding(.horizontal, 18)
         }
         .padding(.top, 16)
-        .padding(.bottom, 24)
+        .safeAreaPadding(.bottom, 16)
     }
 
     private var submitButton: some View {
@@ -118,7 +118,7 @@ struct GuessGameView: View {
                 .padding(.horizontal, 18)
         }
         .padding(.top, 16)
-        .padding(.bottom, 24)
+        .safeAreaPadding(.bottom, 16)
     }
 
     private func scoreBlock(_ result: GuessSubmitResponse) -> some View {
