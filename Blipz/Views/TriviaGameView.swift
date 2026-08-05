@@ -26,11 +26,11 @@ struct TriviaGameView: View {
                 } else if let question = viewModel.currentQuestion {
                     VStack(alignment: .leading, spacing: 20) {
                         segmentProgress
-                        questionCard(question)
+                        questionAndAnswers(question)
                     }
                     .padding(.horizontal, 18)
                     .padding(.top, 8)
-                    .padding(.bottom, 24)
+                    .padding(.bottom, 16)
                 } else if let error = viewModel.errorMessage {
                     Text(error)
                         .foregroundStyle(Theme.error)
@@ -42,6 +42,16 @@ struct TriviaGameView: View {
                         .accessibilityLabel("Loading today's trivia")
                         .padding(.top, 60)
                 }
+            }
+
+            // Pinned outside the ScrollView so it sits at the bottom of the screen
+            // instead of floating directly under the answer rows with empty space
+            // below it — the answer list stays top-aligned and scrolls independently.
+            if viewModel.result == nil, let question = viewModel.currentQuestion {
+                lockInButton(question)
+                    .padding(.horizontal, 18)
+                    .padding(.top, 12)
+                    .safeAreaPadding(.bottom, 16)
             }
         }
         .screenBackground()
@@ -68,7 +78,7 @@ struct TriviaGameView: View {
 
     // MARK: - Question / answers
 
-    private func questionCard(_ question: TriviaQuestion) -> some View {
+    private func questionAndAnswers(_ question: TriviaQuestion) -> some View {
         VStack(alignment: .leading, spacing: 20) {
             Text(question.question)
                 .font(.title2.weight(.medium))
@@ -81,14 +91,16 @@ struct TriviaGameView: View {
                     optionRow(option, optionId: triviaOptionIds[index])
                 }
             }
-
-            Button("Lock it in") {
-                lockIn(question)
-            }
-            .buttonStyle(PrimaryButtonStyle())
-            .disabled(selectedOptionId == nil)
         }
         .animation(.easeOut(duration: 0.2), value: selectedOptionId)
+    }
+
+    private func lockInButton(_ question: TriviaQuestion) -> some View {
+        Button("Lock it in") {
+            lockIn(question)
+        }
+        .buttonStyle(PrimaryButtonStyle())
+        .disabled(selectedOptionId == nil)
     }
 
     // Black text on a 1px light border; selected is a dark border plus a pale green
