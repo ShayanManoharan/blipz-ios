@@ -2,17 +2,20 @@ import SwiftUI
 
 struct MathGameView: View {
     @State private var viewModel = MathGameViewModel()
-    @FocusState private var answerFieldFocused: Bool
-    @ScaledMetric(relativeTo: .title) private var headerFontSize: CGFloat = 28
-    @ScaledMetric(relativeTo: .largeTitle) private var problemFontSize: CGFloat = 48
+    @State private var profileViewModel = ProfileViewModel()
+    @Environment(\.dismiss) private var dismiss
 
     var body: some View {
-        VStack(spacing: 24) {
-            header
+        VStack(spacing: 0) {
+            GameModalBar(title: "QUICK MATHS") {
+                timer
+            }
+            .padding(.horizontal, 14)
+            .padding(.top, 4)
 
             switch viewModel.phase {
             case .notStarted:
-                notStartedContent
+                loadingState
             case .playing:
                 playingContent
             case .finished:
@@ -21,97 +24,259 @@ struct MathGameView: View {
 
             if let error = viewModel.errorMessage {
                 Text(error)
+                    .font(.caption)
                     .foregroundStyle(Theme.error)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 40)
             }
         }
-        .padding()
         .screenBackground()
-        .animation(.spring(response: 0.4, dampingFraction: 0.7), value: viewModel.phase)
         .task {
             await viewModel.loadDailyContent()
-        }
-    }
-
-    private var header: some View {
-        VStack(spacing: 4) {
-            Text("Quick Maths")
-                .font(.system(size: headerFontSize, weight: .bold, design: .rounded))
-            Text("Answer all 20 as fast as you can.")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-        }
-        .accessibilityElement(children: .combine)
-    }
-
-    private var notStartedContent: some View {
-        VStack(spacing: 20) {
-            Image(systemName: "bolt.fill")
-                .font(.system(size: 44))
-                .foregroundStyle(Theme.accent)
-
-            if viewModel.isLoading {
-                ProgressView()
-                    .accessibilityLabel("Loading today's problems")
-            } else {
-                Button("Play") {
-                    answerFieldFocused = true
-                    viewModel.start()
-                }
-                .buttonStyle(PrimaryButtonStyle())
-                .padding(.horizontal, 60)
-                .disabled(viewModel.problems.isEmpty)
+            await profileViewModel.loadProfile()
+            if viewModel.phase == .notStarted, !viewModel.problems.isEmpty {
+                viewModel.start()
             }
         }
-        .cardStyle()
     }
+
+    @ViewBuilder
+    private var timer: some View {
+        if let startDate = viewModel.startDate, viewModel.phase == .playing {
+            TimelineView(.periodic(from: startDate, by: 0.1)) { context in
+                let elapsed = context.date.timeIntervalSince(startDate)
+                Text(elapsedString(elapsed))
+                    .font(.system(.subheadline, design: .monospaced))
+                    .foregroundStyle(Theme.accent)
+                    .accessibilityLabel("Elapsed time: \(String(format: "%.1f", elapsed)) seconds")
+            }
+        } else {
+            Color.clear
+        }
+    }
+
+    private var loadingState: some View {
+        VStack {
+            Spacer()
+            ProgressView()
+                .accessibilityLabel("Loading today's problems")
+            Spacer()
+        }
+    }
+
+    // MARK: - Playing
 
     private var playingContent: some View {
-        VStack(spacing: 16) {
-            HStack {
-                Text("Question \(viewModel.currentDisplayIndex + 1) of \(viewModel.totalCount)")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                Spacer()
-                if let startDate = viewModel.startDate {
-                    TimelineView(.periodic(from: startDate, by: 0.1)) { context in
-                        let elapsed = context.date.timeIntervalSince(startDate)
-                        Text(elapsedString(elapsed))
-                            .font(.system(.subheadline, design: .monospaced))
-                            .foregroundStyle(Theme.accent)
-                            .accessibilityLabel("Elapsed time: \(String(format: "%.1f", elapsed)) seconds")
-                    }
+        VStack(spacing: 0) {
+            progressHeader
+
+            Spacer(minLength: 12)
+
+            if let problem = viewModel.currentProblem {
+                VStack(spacing: 14) {
+                    Text(problem.question)
+                        .font(.system(size: 46, weight: .bold, design: .rounded))
+                        .id(viewModel.currentDisplayIndex)
+                        .transition(.opacity)
+
+                    Rectangle()
+                        .fill(Color.primary.opacity(0.85))
+                        .frame(width: 150, height: 2)
+
+                    Text(viewModel.currentAnswerText.isEmpty ? " " : viewModel.currentAnswerText)
+                        .font(.system(size: 30, weight: .regular, design: .rounded))
+                        .foregroundStyle(.secondary)
+                        .frame(minHeight: 36)
+                        .accessibilityLabel(
+                            viewModel.currentAnswerText.isEmpty
+                                ? "No answer typed yet"
+                                : "Typed answer: \(viewModel.currentAnswerText)"
+                        )
                 }
             }
 
-            if let problem = viewModel.currentProblem {
-                Text(problem.question)
-                    .font(.system(size: problemFontSize, weight: .bold, design: .rounded))
-                    .id(viewModel.currentDisplayIndex)
-                    .transition(.opacity)
+            Spacer(minLength: 12)
 
-                TextField("Answer", text: $viewModel.currentAnswerText)
-                    .textFieldStyle(.roundedBorder)
-                    .keyboardType(.numbersAndPunctuation)
-                    .multilineTextAlignment(.center)
-                    .font(.title2)
-                    .padding(.horizontal, 40)
-                    .focused($answerFieldFocused)
-                    .onChange(of: viewModel.currentAnswerText) {
-                        viewModel.checkAnswer()
-                    }
-            }
+            keypad
         }
-        .cardStyle()
+        .animation(.easeOut(duration: 0.2), value: viewModel.currentDisplayIndex)
     }
 
+    private var progressHeader: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            GeometryReader { geo in
+                ZStack(alignment: .leading) {
+                    Rectangle().fill(Theme.hairline)
+                    Rectangle().fill(Theme.accent).frame(width: geo.size.width * progressFraction)
+                }
+            }
+            .frame(height: 3)
+            .animation(.easeOut(duration: 0.2), value: viewModel.currentDisplayIndex)
+
+            Text("\(viewModel.currentDisplayIndex) of \(viewModel.totalCount)")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+        .padding(.horizontal, 18)
+        .padding(.top, 8)
+    }
+
+    private var progressFraction: CGFloat {
+        viewModel.totalCount > 0 ? CGFloat(viewModel.currentDisplayIndex) / CGFloat(viewModel.totalCount) : 0
+    }
+
+    // MARK: - Keypad
+
+    private enum KeypadKey: Hashable {
+        case digit(Int)
+        case delete
+        case enter
+    }
+
+    private static let keypadRows: [[KeypadKey]] = [
+        [.digit(1), .digit(2), .digit(3)],
+        [.digit(4), .digit(5), .digit(6)],
+        [.digit(7), .digit(8), .digit(9)],
+        [.delete, .digit(0), .enter],
+    ]
+
+    private var keypad: some View {
+        VStack(spacing: 8) {
+            ForEach(Self.keypadRows, id: \.self) { row in
+                HStack(spacing: 8) {
+                    ForEach(row, id: \.self) { key in
+                        keypadButton(key)
+                    }
+                }
+            }
+        }
+        .padding(.horizontal, 18)
+        .padding(.bottom, 16)
+    }
+
+    @ViewBuilder
+    private func keypadButton(_ key: KeypadKey) -> some View {
+        switch key {
+        case .digit(let d):
+            Button {
+                Haptics.light()
+                viewModel.currentAnswerText.append("\(d)")
+                viewModel.checkAnswer()
+            } label: {
+                Text("\(d)")
+                    .font(.title2.weight(.medium))
+                    .frame(maxWidth: .infinity, minHeight: 52)
+            }
+            .buttonStyle(.plain)
+            .background(Color(.systemGray6), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+            .accessibilityLabel("\(d)")
+
+        case .delete:
+            Button {
+                Haptics.light()
+                if !viewModel.currentAnswerText.isEmpty {
+                    viewModel.currentAnswerText.removeLast()
+                }
+            } label: {
+                Image(systemName: "delete.left")
+                    .font(.body.weight(.medium))
+                    .frame(maxWidth: .infinity, minHeight: 52)
+            }
+            .buttonStyle(.plain)
+            .background(Color(.systemGray6), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+            .accessibilityLabel("Delete")
+
+        case .enter:
+            Button {
+                let before = viewModel.currentDisplayIndex
+                viewModel.checkAnswer()
+                if viewModel.currentDisplayIndex == before {
+                    Haptics.error()
+                } else {
+                    Haptics.light()
+                }
+            } label: {
+                Text("Enter")
+                    .font(.headline)
+                    .foregroundStyle(.white)
+                    .frame(maxWidth: .infinity, minHeight: 52)
+            }
+            .buttonStyle(.plain)
+            .background(Theme.accent, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+            .accessibilityLabel("Enter")
+        }
+    }
+
+    // MARK: - Finished
+    //
+    // No dedicated wireframe frame for this state (Maths has no spoiler to reveal, so
+    // there's nothing to chain past unlike Guess's §4) — reuses the same score-block +
+    // chain-to-next-game pattern for consistency with Guess's result screen.
+
     private var finishedContent: some View {
-        ResultCard(
-            title: "\(viewModel.result?.correct ?? viewModel.totalCount)/\(viewModel.totalCount)",
-            subtitle: viewModel.elapsedTime.map { "Solved in \(elapsedString($0))" } ?? "Nice work today!"
-        )
-        .transition(.scale.combined(with: .opacity))
+        VStack(spacing: 20) {
+            Spacer(minLength: 24)
+
+            VStack(spacing: 4) {
+                Text("\(viewModel.result?.correct ?? viewModel.totalCount)/\(viewModel.totalCount)")
+                    .font(.system(size: 52, weight: .bold, design: .rounded))
+                if let elapsed = viewModel.elapsedTime {
+                    Text("Solved in \(elapsedString(elapsed))")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 22)
+            .outlinedContainer(emphasized: true)
+            .padding(.horizontal, 18)
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel("Maths, \(viewModel.result?.correct ?? viewModel.totalCount) out of \(viewModel.totalCount), complete")
+
+            nextButton
+                .padding(.horizontal, 18)
+
+            Spacer(minLength: 24)
+        }
+        .transition(.opacity)
+    }
+
+    @ViewBuilder
+    private var nextButton: some View {
+        if let profile = profileViewModel.profile, let next = BlipzGame.maths.nextUnplayed(in: profile) {
+            NavigationLink {
+                nextDestination(next)
+            } label: {
+                Text("Next: \(nextGameLabel(next))")
+            }
+            .buttonStyle(PrimaryButtonStyle())
+            .simultaneousGesture(TapGesture().onEnded { Haptics.light() })
+        } else {
+            Button {
+                Haptics.light()
+                dismiss()
+            } label: {
+                Text("See today's score")
+            }
+            .buttonStyle(PrimaryButtonStyle())
+        }
+    }
+
+    @ViewBuilder
+    private func nextDestination(_ game: BlipzGame) -> some View {
+        switch game {
+        case .trivia: TriviaGameView().toolbar(.hidden, for: .tabBar)
+        case .guess: GuessGameView().toolbar(.hidden, for: .tabBar)
+        case .maths: EmptyView()
+        }
+    }
+
+    private func nextGameLabel(_ game: BlipzGame) -> String {
+        switch game {
+        case .trivia: return "trivia"
+        case .guess: return "guess the prompt"
+        case .maths: return ""
+        }
     }
 
     private func elapsedString(_ interval: TimeInterval) -> String {
