@@ -25,6 +25,7 @@ struct GuessGameView: View {
             }
         }
         .screenBackground()
+        .toolbar(.hidden, for: .navigationBar)
         .task {
             await viewModel.loadDailyContent()
             await profileViewModel.loadProfile()
