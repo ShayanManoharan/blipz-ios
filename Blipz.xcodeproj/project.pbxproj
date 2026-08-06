@@ -33,9 +33,22 @@
 		B7DDAA7C2FCE7F6B00FAE0DB /* BlipzUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = BlipzUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		B7DDAA8F2FCE7F6B00FAE0DB /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				InfoAdditions.plist,
+			);
+			target = B7DDAA642FCE7F6800FAE0DB /* Blipz */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		B7DDAA672FCE7F6800FAE0DB /* Blipz */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				B7DDAA8F2FCE7F6B00FAE0DB /* PBXFileSystemSynchronizedBuildFileExceptionSet */,
+			);
 			path = Blipz;
 			sourceTree = "<group>";
 		};
