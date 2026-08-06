@@ -211,8 +211,16 @@ struct RanksView: View {
 
                 Spacer(minLength: 8)
 
-                Text(entry.totalScore, format: .number.precision(.fractionLength(1)))
-                    .font(.blipzDisplay(size: 17, weight: .medium))
+                // Leaderboard rows are always today's — always on/after the
+                // normalized-scoring cutover (see backend app/scoring.py) — so a bare
+                // "/100" here is never ambiguous, unlike History's multi-day window.
+                HStack(alignment: .lastTextBaseline, spacing: 2) {
+                    Text(entry.totalScore, format: .number.precision(.fractionLength(1)))
+                        .font(.blipzDisplay(size: 17, weight: .medium))
+                    Text("/100")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
             }
             .padding(.vertical, 10)
             .padding(.horizontal, 12)
@@ -224,7 +232,7 @@ struct RanksView: View {
         .accessibilityElement(children: .combine)
         .accessibilityLabel(
             "Rank \(entry.rank), \(entry.username)\(mine ? ", you" : ""), "
-                + "\(entry.totalScore.formatted(.number.precision(.fractionLength(1)))) points"
+                + "\(entry.totalScore.formatted(.number.precision(.fractionLength(1)))) out of 100 points"
         )
     }
 

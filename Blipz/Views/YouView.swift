@@ -166,19 +166,30 @@ struct YouView: View {
                 }
             }
             .frame(height: 82)
+
+            // The scoring formula changed on 2026-08-06 (see backend app/scoring.py) —
+            // a tile from before that date is on the old unweighted /35 scale, not
+            // directly comparable to a /100 tile right next to it. Only shown while the
+            // visible 5-day window actually straddles the cutover; disappears on its own
+            // once every visible day is past it.
+            if last5Days.contains(where: { $0.isLegacyScoring && $0.score != nil }) {
+                Text("† from before the scoring update — not directly comparable")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
         }
         .padding(.horizontal, 18)
         .padding(.top, 20)
         .padding(.bottom, 20)
     }
 
-    private var last5Days: [(date: Date, label: String, score: Double?)] {
+    private var last5Days: [(date: Date, label: String, score: Double?, isLegacyScoring: Bool)] {
         let calendar = Calendar.current
         return (0..<5).reversed().map { offset in
             let day = calendar.date(byAdding: .day, value: -offset, to: .now) ?? .now
             let key = isoDateString(day)
-            let score = history.first(where: { $0.date == key })?.totalScore
-            return (day, day.formatted(.dateTime.weekday(.abbreviated)), score)
+            let entry = history.first(where: { $0.date == key })
+            return (day, day.formatted(.dateTime.weekday(.abbreviated)), entry?.totalScore, entry?.scoringModel == "legacy_raw_35")
         }
     }
 
@@ -189,7 +200,7 @@ struct YouView: View {
         return formatter.string(from: date)
     }
 
-    private func historyTile(_ day: (date: Date, label: String, score: Double?), size: CGFloat) -> some View {
+    private func historyTile(_ day: (date: Date, label: String, score: Double?, isLegacyScoring: Bool), size: CGFloat) -> some View {
         let isToday = Calendar.current.isDateInToday(day.date)
         return VStack(spacing: 6) {
             RoundedRectangle(cornerRadius: 10, style: .continuous)
@@ -199,16 +210,28 @@ struct YouView: View {
                     // Dropped to a whole number here specifically — five tiles at this
                     // size stay legible without a decimal; the precise score is still
                     // shown everywhere else (stat number, recap, leaderboard).
-                    Text(day.score.map { $0.formatted(.number.precision(.fractionLength(0))) } ?? "—")
-                        .font(.blipzDisplay(size: 17, weight: .medium))
-                        .foregroundStyle(isToday ? .white : (day.score == nil ? .secondary : .primary))
+                    HStack(alignment: .firstTextBaseline, spacing: 1) {
+                        Text(day.score.map { $0.formatted(.number.precision(.fractionLength(0))) } ?? "—")
+                            .font(.blipzDisplay(size: 17, weight: .medium))
+                        if day.isLegacyScoring, day.score != nil {
+                            Text("†")
+                                .font(.system(size: 11, weight: .medium))
+                        }
+                    }
+                    .foregroundStyle(isToday ? .white : (day.score == nil ? .secondary : .primary))
                 )
             Text(day.label)
                 .font(.system(size: 11))
                 .foregroundStyle(.secondary)
         }
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(day.label), \(day.score.map { $0.formatted(.number.precision(.fractionLength(1))) } ?? "no score")")
+        .accessibilityLabel(
+            "\(day.label), "
+                + (day.score.map {
+                    $0.formatted(.number.precision(.fractionLength(1)))
+                        + (day.isLegacyScoring ? " out of 35, old scoring, not directly comparable" : " out of 100")
+                } ?? "no score")
+        )
     }
 
     // MARK: - Reminder

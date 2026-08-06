@@ -10,7 +10,10 @@ struct TodayView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private static let games: [BlipzGame] = [.guess, .maths, .trivia]
-    private static let maxTotal = 35
+    // total_score is always today's — and today is always on/after the normalized-
+    // scoring cutover (see backend app/scoring.py) — so this is never ambiguous here,
+    // unlike History's multi-day window (see YouView's legacy-scoring handling).
+    private static let maxTotal = 100
 
     var body: some View {
         NavigationStack {

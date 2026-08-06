@@ -10,8 +10,13 @@ struct ScoreCardView: View {
                 .font(.system(size: 12, weight: .bold))
                 .tracking(1.5)
 
-            Text(profile.totalScore, format: .number.precision(.fractionLength(1)))
-                .font(.blipzDisplay(size: 40, weight: .bold))
+            HStack(alignment: .lastTextBaseline, spacing: 4) {
+                Text(profile.totalScore, format: .number.precision(.fractionLength(1)))
+                    .font(.blipzDisplay(size: 40, weight: .bold))
+                Text("/ 100")
+                    .font(.system(size: 15, weight: .medium))
+                    .foregroundStyle(.secondary)
+            }
 
             // The only place emoji appear in the product — a Wordle-style proportional
             // square row per game, guess/maths/trivia in that fixed order.
