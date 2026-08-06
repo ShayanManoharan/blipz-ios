@@ -109,8 +109,8 @@ struct GuessGameView: View {
             scoreBlock(result)
 
             VStack(alignment: .leading, spacing: 16) {
-                labeledText(overline: "YOU SAID", overlineColor: .secondary, text: result.guess)
-                labeledText(overline: "ACTUAL PROMPT", overlineColor: Theme.accent, text: result.actualPrompt ?? "—")
+                labeledText(overline: "YOUR GUESS", overlineColor: .secondary, text: result.guess)
+                labeledText(overline: "WHAT AI WAS GIVEN", overlineColor: Theme.accent, text: result.actualPrompt ?? "—")
             }
             .padding(.horizontal, 18)
 
