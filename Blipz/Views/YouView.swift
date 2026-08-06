@@ -196,7 +196,10 @@ struct YouView: View {
                 .fill(isToday ? Theme.accent : Theme.surface)
                 .frame(width: size, height: size)
                 .overlay(
-                    Text(day.score.map { $0.formatted(.number.precision(.fractionLength(1))) } ?? "—")
+                    // Dropped to a whole number here specifically — five tiles at this
+                    // size stay legible without a decimal; the precise score is still
+                    // shown everywhere else (stat number, recap, leaderboard).
+                    Text(day.score.map { $0.formatted(.number.precision(.fractionLength(0))) } ?? "—")
                         .font(.blipzDisplay(size: 17, weight: .medium))
                         .foregroundStyle(isToday ? .white : (day.score == nil ? .secondary : .primary))
                 )
