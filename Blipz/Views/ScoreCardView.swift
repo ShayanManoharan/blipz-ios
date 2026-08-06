@@ -55,7 +55,8 @@ enum ScoreCardRenderer {
         profile: UserProfile(
             id: "1", username: "shayan", currentStreak: 4, longestStreak: 7,
             mathsScore: 17, triviaScore: 4, guessScore: 8.5, totalScore: 29.5,
-            mathsCompleted: true, guessCompleted: true, triviaCompleted: true
+            mathsCompleted: true, guessCompleted: true, triviaCompleted: true,
+            mathsElapsedSeconds: 62
         ),
         dateLabel: "Jul 29"
     )

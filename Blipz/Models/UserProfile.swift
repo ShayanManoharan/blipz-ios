@@ -12,4 +12,6 @@ struct UserProfile: Decodable {
     let mathsCompleted: Bool
     let guessCompleted: Bool
     let triviaCompleted: Bool
+    // Only present once maths_completed is true for today — nil beforehand.
+    let mathsElapsedSeconds: Double?
 }

@@ -244,25 +244,34 @@ struct MathGameView: View {
     // there's nothing to chain past unlike Guess's §4) — reuses the same score-block +
     // chain-to-next-game pattern for consistency with Guess's result screen.
 
+    // Maths is a stopwatch game: reaching 20/20 is the completion condition (you can't
+    // advance past a problem without answering it correctly — see
+    // MathGameViewModel.checkAnswer), not a meaningful score. Elapsed time is the only
+    // thing that actually varies between runs, so it's the primary result; the
+    // completion count is secondary context, not the headline.
     private var finishedContent: some View {
         VStack(spacing: 20) {
             Spacer(minLength: 24)
 
             VStack(spacing: 4) {
-                Text("\(viewModel.result?.correct ?? viewModel.totalCount)/\(viewModel.totalCount)")
-                    .font(.system(size: 52, weight: .bold))
                 if let elapsed = viewModel.elapsedTime {
-                    Text("Solved in \(elapsedString(elapsed))")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                    Text(elapsedClockString(elapsed))
+                        .font(.system(size: 52, weight: .bold))
                 }
+                Text("\(viewModel.result?.correct ?? viewModel.totalCount) problems completed")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
             .frame(maxWidth: .infinity)
             .padding(.vertical, 22)
             .outlinedContainer(emphasized: true)
             .padding(.horizontal, 18)
             .accessibilityElement(children: .combine)
-            .accessibilityLabel("Maths, \(viewModel.result?.correct ?? viewModel.totalCount) out of \(viewModel.totalCount), complete")
+            .accessibilityLabel(
+                viewModel.elapsedTime.map { "Maths complete, solved in \(elapsedString($0)), "
+                    + "\(viewModel.result?.correct ?? viewModel.totalCount) problems completed" }
+                    ?? "Maths, \(viewModel.result?.correct ?? viewModel.totalCount) out of \(viewModel.totalCount), complete"
+            )
 
             nextButton
                 .padding(.horizontal, 18)
@@ -312,6 +321,13 @@ struct MathGameView: View {
 
     private func elapsedString(_ interval: TimeInterval) -> String {
         String(format: "%.1fs", interval)
+    }
+
+    // m:ss for the big result number — more scannable at a glance than "62.3s", and
+    // matches the countdown's clock format above.
+    private func elapsedClockString(_ interval: TimeInterval) -> String {
+        let total = Int(interval.rounded())
+        return String(format: "%d:%02d", total / 60, total % 60)
     }
 }
 

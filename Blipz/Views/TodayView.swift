@@ -149,6 +149,17 @@ struct TodayView: View {
         }
     }
 
+    // Maths is a stopwatch game — every completed run is 20/20 by construction (you
+    // can't advance past a problem without answering it correctly), so the count isn't
+    // meaningful. Elapsed time is what actually varies, so it takes the "score" slot
+    // here once that metadata exists; older completed rows without it fall back to the
+    // plain completion count rather than showing nothing.
+    private func mathsRowText(_ profile: UserProfile) -> String {
+        guard let elapsed = profile.mathsElapsedSeconds else { return "done" }
+        let total = Int(elapsed.rounded())
+        return String(format: "%d:%02d", total / 60, total % 60)
+    }
+
     @ViewBuilder
     private func destination(for game: BlipzGame) -> some View {
         switch game {
@@ -305,7 +316,12 @@ struct TodayView: View {
     // MARK: - Rows
 
     private func completedRow(_ game: BlipzGame, profile: UserProfile, showDenominator: Bool) -> some View {
-        let scoreText = showDenominator ? "\(scoreValue(game, profile))/\(maxScore(game))" : scoreValue(game, profile)
+        let scoreText: String
+        if game == .maths {
+            scoreText = mathsRowText(profile)
+        } else {
+            scoreText = showDenominator ? "\(scoreValue(game, profile))/\(maxScore(game))" : scoreValue(game, profile)
+        }
         return NavigationLink {
             destination(for: game)
         } label: {
@@ -330,7 +346,18 @@ struct TodayView: View {
         }
         .buttonStyle(CardPressStyle(reduceMotion: reduceMotion))
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(accessibleName(game)), \(scoreValue(game, profile)) out of \(maxScore(game)), complete")
+        .accessibilityLabel(completedRowAccessibilityLabel(game, profile: profile))
+    }
+
+    private func completedRowAccessibilityLabel(_ game: BlipzGame, profile: UserProfile) -> String {
+        guard game == .maths else {
+            return "\(accessibleName(game)), \(scoreValue(game, profile)) out of \(maxScore(game)), complete"
+        }
+        if let elapsed = profile.mathsElapsedSeconds {
+            let total = Int(elapsed.rounded())
+            return "Maths, solved in \(total / 60) minutes \(total % 60) seconds, complete"
+        }
+        return "Maths, complete"
     }
 
     private var checkmarkBox: some View {
