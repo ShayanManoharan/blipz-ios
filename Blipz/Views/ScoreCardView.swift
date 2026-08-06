@@ -7,7 +7,7 @@ struct ScoreCardView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             Text("BLIPZ · \(dateLabel.uppercased())")
-                .font(.system(size: 12, weight: .bold, design: .rounded))
+                .font(.system(size: 12, weight: .bold))
                 .tracking(1.5)
 
             Text(profile.totalScore, format: .number.precision(.fractionLength(1)))

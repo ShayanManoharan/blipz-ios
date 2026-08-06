@@ -151,7 +151,7 @@ struct TriviaGameView: View {
         VStack(spacing: 20) {
             VStack(spacing: 4) {
                 Text("\(result.correct)/\(result.total)")
-                    .font(.system(size: 52, weight: .bold, design: .rounded))
+                    .font(.system(size: 52, weight: .bold))
             }
             .frame(maxWidth: .infinity)
             .padding(.vertical, 22)

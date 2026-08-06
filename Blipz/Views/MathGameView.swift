@@ -98,7 +98,7 @@ struct MathGameView: View {
                         .frame(width: 150, height: 2)
 
                     Text(viewModel.currentAnswerText.isEmpty ? " " : viewModel.currentAnswerText)
-                        .font(.system(size: 30, weight: .regular, design: .rounded))
+                        .font(.system(size: 30, weight: .regular))
                         .foregroundStyle(.secondary)
                         .frame(minHeight: 36)
                         .accessibilityLabel(
@@ -240,7 +240,7 @@ struct MathGameView: View {
 
             VStack(spacing: 4) {
                 Text("\(viewModel.result?.correct ?? viewModel.totalCount)/\(viewModel.totalCount)")
-                    .font(.system(size: 52, weight: .bold, design: .rounded))
+                    .font(.system(size: 52, weight: .bold))
                 if let elapsed = viewModel.elapsedTime {
                     Text("Solved in \(elapsedString(elapsed))")
                         .font(.caption)

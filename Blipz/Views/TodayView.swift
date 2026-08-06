@@ -228,7 +228,7 @@ struct TodayView: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
             Text(headline(for: doneCount))
-                .font(.system(size: 26, weight: .regular, design: .rounded))
+                .font(.system(size: 26, weight: .regular))
                 .fixedSize(horizontal: false, vertical: true)
         }
     }

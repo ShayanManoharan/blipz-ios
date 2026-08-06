@@ -46,7 +46,7 @@ struct RanksView: View {
     private var titleRow: some View {
         HStack {
             Text("Ranks")
-                .font(.system(size: 28, weight: .bold, design: .rounded))
+                .font(.system(size: 28, weight: .bold))
             Spacer()
             Button {
                 Haptics.light()
@@ -286,7 +286,7 @@ private struct InitialsAvatar: View {
             .fill(Theme.accent.opacity(0.15))
             .overlay(
                 Text(initial)
-                    .font(.system(size: size * 0.42, weight: .bold, design: .rounded))
+                    .font(.system(size: size * 0.42, weight: .bold))
                     .foregroundStyle(Theme.accent)
             )
             .frame(width: size, height: size)

@@ -55,7 +55,7 @@ struct YouView: View {
     private var titleRow: some View {
         HStack {
             Text("You")
-                .font(.system(size: 28, weight: .bold, design: .rounded))
+                .font(.system(size: 28, weight: .bold))
             Spacer()
             Text("Settings ›")
                 .font(.subheadline)
