@@ -184,29 +184,43 @@ struct RanksView: View {
 
     // Marked by a pale green background, green rank number, and bold weight only —
     // no "You" badge pill.
+    // A plain HStack containing a Spacer (or any other "greedy width" child —
+    // .frame(maxWidth: .infinity) reproduced the exact same thing) silently ignores a
+    // wrapping .padding(.horizontal:) in this specific ancestor chain: the padding
+    // compiles and reports the right size, but the rendered row still bleeds edge to
+    // edge. Confirmed by bisection — removing the greedy child fixes it, adding one
+    // back (Spacer, or frame(maxWidth: .infinity) + .overlay(alignment: .trailing))
+    // reintroduces it every time. GeometryReader sidesteps the bug entirely by
+    // computing the inset width explicitly instead of relying on the automatic
+    // proposal/negotiation that's misbehaving here.
     private func rankRow(_ entry: LeaderboardEntry) -> some View {
         let mine = isCurrentUser(entry)
-        return HStack(spacing: 12) {
-            Text("\(entry.rank)")
-                .font(.subheadline.weight(mine ? .bold : .regular))
-                .foregroundStyle(mine ? Theme.accent : .secondary)
-                .frame(width: 24, alignment: .leading)
+        return GeometryReader { geo in
+            HStack(spacing: 12) {
+                Text("\(entry.rank)")
+                    .font(.subheadline.weight(mine ? .bold : .regular))
+                    .foregroundStyle(mine ? Theme.accent : .secondary)
+                    .frame(width: 24, alignment: .leading)
 
-            InitialsAvatar(name: entry.username, size: 32)
+                InitialsAvatar(name: entry.username, size: 32)
 
-            Text(entry.username)
-                .font(.body.weight(mine ? .bold : .regular))
-                .lineLimit(1)
-                .truncationMode(.tail)
+                Text(entry.username)
+                    .font(.body.weight(mine ? .bold : .regular))
+                    .lineLimit(1)
+                    .truncationMode(.tail)
 
-            Spacer()
+                Spacer(minLength: 8)
 
-            Text(entry.totalScore, format: .number.precision(.fractionLength(1)))
-                .font(.blipzDisplay(size: 17, weight: .medium))
+                Text(entry.totalScore, format: .number.precision(.fractionLength(1)))
+                    .font(.blipzDisplay(size: 17, weight: .medium))
+            }
+            .padding(.vertical, 10)
+            .padding(.horizontal, 12)
+            .frame(width: geo.size.width - 36, alignment: .leading)
+            .background(mine ? Theme.accentWash : Color.clear, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+            .offset(x: 18)
         }
-        .padding(.vertical, 10)
-        .background(mine ? Theme.accentWash : Color.clear, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-        .padding(.horizontal, 18)
+        .frame(height: 56)
         .accessibilityElement(children: .combine)
         .accessibilityLabel(
             "Rank \(entry.rank), \(entry.username)\(mine ? ", you" : ""), "
