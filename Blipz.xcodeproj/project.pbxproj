@@ -34,10 +34,14 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		B7DDAA8F2FCE7F6B00FAE0DB /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
+		B7DDAA8F2FCE7F6B00FAE0DB /* Exceptions for "Blipz" folder in "Blipz" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				InfoAdditions.plist,
+				Configs/Debug.xcconfig,
+				Configs/Staging.xcconfig,
+				Configs/Release.xcconfig,
+				Configs/Shared.xcconfig,
 			);
 			target = B7DDAA642FCE7F6800FAE0DB /* Blipz */;
 		};
@@ -47,7 +51,7 @@
 		B7DDAA672FCE7F6800FAE0DB /* Blipz */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
-				B7DDAA8F2FCE7F6B00FAE0DB /* PBXFileSystemSynchronizedBuildFileExceptionSet */,
+				B7DDAA8F2FCE7F6B00FAE0DB /* Exceptions for "Blipz" folder in "Blipz" target */,
 			);
 			path = Blipz;
 			sourceTree = "<group>";
@@ -418,6 +422,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 6C3QCN3W7N;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Blipz/InfoAdditions.plist;
@@ -450,6 +455,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 6C3QCN3W7N;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Blipz/InfoAdditions.plist;
