@@ -69,6 +69,16 @@ struct MathGameView: View {
         return String(format: "%d:%02d", total / 60, total % 60)
     }
 
+    // Display-only formatting — MathProblem.question/answer (the scoring path) are
+    // untouched, this just swaps the ASCII operators for their typographic equivalents
+    // on the way to the screen.
+    private func displayQuestion(_ problem: MathProblem) -> String {
+        problem.question
+            .replacingOccurrences(of: "*", with: "×")
+            .replacingOccurrences(of: "/", with: "÷")
+            .replacingOccurrences(of: "-", with: "−")
+    }
+
     private var loadingState: some View {
         VStack {
             Spacer()
@@ -88,7 +98,7 @@ struct MathGameView: View {
 
             if let problem = viewModel.currentProblem {
                 VStack(spacing: 14) {
-                    Text(problem.question)
+                    Text(displayQuestion(problem))
                         .font(.blipzDisplay(size: 52, weight: .medium))
                         .id(viewModel.currentDisplayIndex)
                         .transition(.opacity)
