@@ -3,6 +3,7 @@ import SwiftUI
 struct YouView: View {
     @State private var viewModel = ProfileViewModel()
     @State private var history: [HistoryDay] = []
+    @State private var showingOnboarding = false
 
     var body: some View {
         NavigationStack {
@@ -15,6 +16,7 @@ struct YouView: View {
                         statsRow(profile)
                         historySection
                         reminderRow
+                        howBlipzWorksRow
                     } else if let error = viewModel.errorMessage {
                         Text(error)
                             .foregroundStyle(Theme.error)
@@ -35,6 +37,9 @@ struct YouView: View {
             .task {
                 await viewModel.loadProfile()
                 await loadHistory()
+            }
+            .sheet(isPresented: $showingOnboarding) {
+                OnboardingView { showingOnboarding = false }
             }
         }
     }
@@ -248,6 +253,36 @@ struct YouView: View {
                     .foregroundStyle(.secondary)
             }
             .padding(.vertical, 14)
+            Divider()
+        }
+        .padding(.horizontal, 18)
+    }
+
+    // MARK: - Replay onboarding
+    //
+    // Same content shown on first launch, just presented on demand — doesn't touch
+    // hasCompletedOnboarding, so it has no effect on future launches.
+
+    private var howBlipzWorksRow: some View {
+        VStack(spacing: 0) {
+            Divider()
+            Button {
+                Haptics.light()
+                showingOnboarding = true
+            } label: {
+                HStack {
+                    Text("How Blipz works")
+                        .foregroundStyle(.primary)
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(Color(.tertiaryLabel))
+                }
+                .padding(.vertical, 14)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityHint("Replays the intro screen")
             Divider()
         }
         .padding(.horizontal, 18)
