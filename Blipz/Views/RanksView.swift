@@ -5,6 +5,7 @@ struct RanksView: View {
     @State private var profileViewModel = ProfileViewModel()
     @State private var addViewModel = FriendsViewModel()
     @State private var scope = Scope.global
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     enum Scope: String, CaseIterable {
         case global = "Global"
@@ -17,8 +18,6 @@ struct RanksView: View {
                 VStack(alignment: .leading, spacing: 0) {
                     titleRow
                     segmentTabs
-                    Divider()
-
                     if scope == .friends {
                         addFriendField
                     }
@@ -44,23 +43,40 @@ struct RanksView: View {
     // MARK: - Title + segments
 
     private var titleRow: some View {
-        HStack {
-            Text("Ranks")
-                .font(.system(size: 28, weight: .bold))
-            Spacer()
-            Button {
-                Haptics.light()
-                scope = .friends
-            } label: {
-                Text("＋ Add friend")
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(Theme.accent)
+        Group {
+            if dynamicTypeSize.isAccessibilitySize {
+                VStack(alignment: .leading, spacing: 10) {
+                    ranksTitle
+                    addFriendButton
+                }
+            } else {
+                HStack {
+                    ranksTitle
+                    Spacer()
+                    addFriendButton
+                }
             }
-            .accessibilityHint("Switches to the Friends tab")
         }
         .padding(.horizontal, 18)
         .padding(.top, 14)
         .padding(.bottom, 12)
+    }
+
+    private var ranksTitle: some View {
+        Text("Ranks")
+            .font(.system(size: 30, weight: .bold))
+    }
+
+    private var addFriendButton: some View {
+        Button {
+            Haptics.light()
+            scope = .friends
+        } label: {
+            Label("Add friend", systemImage: "plus")
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(Theme.accent)
+        }
+        .accessibilityHint("Switches to the Friends tab")
     }
 
     // Underlined text tabs, not a filled iOS segmented control.
@@ -70,21 +86,22 @@ struct RanksView: View {
                 Button {
                     scope = s
                 } label: {
-                    VStack(spacing: 6) {
+                    VStack(spacing: 8) {
                         Text(s.rawValue)
                             .font(.subheadline.weight(scope == s ? .semibold : .regular))
                             .foregroundStyle(scope == s ? .primary : .secondary)
                         Rectangle()
-                            .fill(scope == s ? Color.primary.opacity(0.85) : .clear)
+                            .fill(scope == s ? Theme.accent : .clear)
                             .frame(height: 2)
                     }
+                    .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.plain)
                 .accessibilityAddTraits(scope == s ? .isSelected : [])
             }
-            Spacer()
         }
         .padding(.horizontal, 18)
+        .padding(.bottom, 10)
     }
 
     // MARK: - Add-by-username (Friends segment only, always at the top)
@@ -150,17 +167,21 @@ struct RanksView: View {
         } else if entries.isEmpty {
             emptyState
         } else {
-            // Dividers stay full-bleed on purpose; each row carries its own 18pt inset
-            // directly (same pattern as titleRow/segmentTabs) so the highlight background
-            // lines up with the title exactly instead of drifting from an ancestor's
-            // padding.
             VStack(spacing: 0) {
-                Divider()
                 ForEach(entries) { entry in
                     rankRow(entry)
-                    Divider()
+                    if entry.id != entries.last?.id {
+                        Divider().padding(.leading, 64)
+                    }
                 }
             }
+            .background(Theme.cardBackground, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .strokeBorder(Theme.hairline.opacity(0.7), lineWidth: 0.5)
+            )
+            .padding(.horizontal, 18)
+            .padding(.top, 14)
 
             if scope == .global {
                 globalTail
@@ -182,58 +203,70 @@ struct RanksView: View {
         return entry.username == username
     }
 
-    // Marked by a pale green background, green rank number, and bold weight only —
-    // no "You" badge pill.
-    // A plain HStack containing a Spacer (or any other "greedy width" child —
-    // .frame(maxWidth: .infinity) reproduced the exact same thing) silently ignores a
-    // wrapping .padding(.horizontal:) in this specific ancestor chain: the padding
-    // compiles and reports the right size, but the rendered row still bleeds edge to
-    // edge. Confirmed by bisection — removing the greedy child fixes it, adding one
-    // back (Spacer, or frame(maxWidth: .infinity) + .overlay(alignment: .trailing))
-    // reintroduces it every time. GeometryReader sidesteps the bug entirely by
-    // computing the inset width explicitly instead of relying on the automatic
-    // proposal/negotiation that's misbehaving here.
     private func rankRow(_ entry: LeaderboardEntry) -> some View {
         let mine = isCurrentUser(entry)
-        return GeometryReader { geo in
-            HStack(spacing: 12) {
-                Text("\(entry.rank)")
-                    .font(.subheadline.weight(mine ? .bold : .regular))
-                    .foregroundStyle(mine ? Theme.accent : .secondary)
-                    .frame(width: 24, alignment: .leading)
-
-                InitialsAvatar(name: entry.username, size: 32)
-
-                Text(entry.username)
-                    .font(.body.weight(mine ? .bold : .regular))
-                    .lineLimit(1)
-                    .truncationMode(.tail)
-
-                Spacer(minLength: 8)
-
-                // Leaderboard rows are always today's — always on/after the
-                // normalized-scoring cutover (see backend app/scoring.py) — so a bare
-                // "/100" here is never ambiguous, unlike History's multi-day window.
-                HStack(alignment: .lastTextBaseline, spacing: 2) {
-                    Text(entry.totalScore, format: .number.precision(.fractionLength(1)))
-                        .font(.blipzDisplay(size: 17, weight: .medium))
-                    Text("/100")
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
+        return Group {
+            if dynamicTypeSize.isAccessibilitySize {
+                VStack(alignment: .leading, spacing: 10) {
+                    accessibleRankIdentity(entry, mine: mine)
+                    rankScore(entry)
+                        .frame(maxWidth: .infinity, alignment: .trailing)
+                }
+            } else {
+                HStack(spacing: 12) {
+                    rankIdentity(entry, mine: mine)
+                    Spacer(minLength: 8)
+                    rankScore(entry)
                 }
             }
-            .padding(.vertical, 10)
-            .padding(.horizontal, 12)
-            .frame(width: geo.size.width - 36, alignment: .leading)
-            .background(mine ? Theme.accentWash : Color.clear, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-            .offset(x: 18)
         }
-        .frame(height: 56)
+        .padding(.horizontal, 14)
+        .padding(.vertical, 12)
+        .background(mine ? Theme.accentWash : Color.clear)
         .accessibilityElement(children: .combine)
         .accessibilityLabel(
             "Rank \(entry.rank), \(entry.username)\(mine ? ", you" : ""), "
                 + "\(entry.totalScore.formatted(.number.precision(.fractionLength(1)))) out of 100 points"
         )
+    }
+
+    private func rankIdentity(_ entry: LeaderboardEntry, mine: Bool) -> some View {
+        HStack(spacing: 12) {
+            Text("\(entry.rank)")
+                .font(.subheadline.weight(mine ? .bold : .regular))
+                .foregroundStyle(mine ? Theme.accent : .secondary)
+                .frame(width: 24, alignment: .leading)
+            InitialsAvatar(name: entry.username, size: 32)
+            Text(entry.username)
+                .font(.body.weight(mine ? .semibold : .regular))
+                .lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : 1)
+                .truncationMode(.tail)
+        }
+    }
+
+    private func accessibleRankIdentity(_ entry: LeaderboardEntry, mine: Bool) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 12) {
+                Text("\(entry.rank)")
+                    .font(.subheadline.weight(mine ? .bold : .regular))
+                    .foregroundStyle(mine ? Theme.accent : .secondary)
+                InitialsAvatar(name: entry.username, size: 32)
+            }
+            Text(entry.username)
+                .font(.body.weight(mine ? .semibold : .regular))
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    private func rankScore(_ entry: LeaderboardEntry) -> some View {
+        HStack(alignment: .lastTextBaseline, spacing: 3) {
+            Text(entry.totalScore, format: .number.precision(.fractionLength(1)))
+                .font(.blipzDisplay(size: 17, weight: .medium))
+                .foregroundStyle(isCurrentUser(entry) ? Theme.accent : .primary)
+            Text("/100")
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+        }
     }
 
     @ViewBuilder
@@ -267,6 +300,14 @@ struct RanksView: View {
 
     private var globalTail: some View {
         VStack(spacing: 14) {
+            Circle()
+                .fill(Theme.surface)
+                .frame(width: 44, height: 44)
+                .overlay(
+                    Image(systemName: "globe")
+                        .foregroundStyle(Theme.accent)
+                )
+                .accessibilityHidden(true)
             VStack(spacing: 2) {
                 Text("That's everyone so far.")
                     .font(.subheadline)
@@ -281,8 +322,15 @@ struct RanksView: View {
                 .buttonStyle(PrimaryButtonStyle())
         }
         .padding(.top, 24)
-        .padding(.bottom, 24)
+        .padding(.bottom, 18)
         .padding(.horizontal, 18)
+        .background(Theme.cardBackground, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .strokeBorder(Theme.hairline.opacity(0.7), lineWidth: 0.5)
+        )
+        .padding(.horizontal, 18)
+        .padding(.top, 18)
     }
 
     // Real, working share sheet (no fabricated invite link/code — the app has no such
