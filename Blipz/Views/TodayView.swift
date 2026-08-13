@@ -8,6 +8,7 @@ struct TodayView: View {
     @State private var boardLoaded = false
     @Environment(\.displayScale) private var displayScale
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     private static let games: [BlipzGame] = [.guess, .maths, .trivia]
     // total_score is always today's — and today is always on/after the normalized-
@@ -181,13 +182,21 @@ struct TodayView: View {
                     .font(.blipzDisplay(size: 17, weight: .bold))
                     .tracking(17 * 0.18)
                 Spacer()
-                Text("streak \(profile.currentStreak) ›")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                    .accessibilityLabel("\(profile.currentStreak) day streak")
+                HStack(spacing: 5) {
+                    Image(systemName: "flame.fill")
+                        .font(.caption)
+                        .foregroundStyle(Theme.streak)
+                    Text("\(profile.currentStreak) day streak")
+                        .font(.caption.weight(.medium))
+                }
+                .padding(.horizontal, 10)
+                .padding(.vertical, 7)
+                .background(Theme.surface, in: Capsule())
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel("\(profile.currentStreak) day streak")
             }
             .padding(.horizontal, 18)
-            .padding(.vertical, 14)
+            .padding(.vertical, 12)
 
             Divider()
         }
@@ -197,40 +206,239 @@ struct TodayView: View {
 
     @ViewBuilder
     private func content(_ profile: UserProfile) -> some View {
-        let complete = isDayComplete(profile)
+        VStack(alignment: .leading, spacing: 18) {
+            dailyHeader(profile)
+            gameList(profile)
+            dailyProgress(profile)
 
-        VStack(alignment: .leading, spacing: 20) {
-            if complete {
-                completeHeader(profile)
-            } else {
-                inProgressHeader(profile)
-            }
-
-            VStack(alignment: .leading, spacing: 16) {
-                HairlineSection(items: completedGames(profile)) { game in
-                    completedRow(game, profile: profile, showDenominator: complete)
-                }
-                if !complete, let upNext = upNextGame(profile) {
-                    upNextCard(upNext)
-                }
-                HairlineSection(items: dormantGames(profile)) { game in
-                    dormantRow(game)
-                }
-            }
-
-            if complete {
-                completeExtras(profile)
-            } else if completedGames(profile).isEmpty {
-                boardTeaser
-            } else {
-                Text("Finish all three to get your score")
+            if let next = upNextGame(profile) {
+                nextGameButton(next, continuing: !completedGames(profile).isEmpty)
+                Text("Finish all three games to lock in today's score")
                     .font(.caption)
                     .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity)
+            } else {
+                completeExtras(profile)
             }
+
+            boardTeaser
         }
         .padding(.horizontal, 18)
-        .padding(.top, 20)
+        .padding(.top, 18)
         .padding(.bottom, 24)
+    }
+
+    // MARK: - Direction A daily hierarchy
+
+    private func dailyHeader(_ profile: UserProfile) -> some View {
+        let doneCount = completedGames(profile).count
+        return VStack(alignment: .leading, spacing: 6) {
+            Text(Date.now.formatted(.dateTime.weekday(.wide).month(.abbreviated).day()))
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+            Text(headline(for: doneCount))
+                .font(.system(size: 26, weight: .bold))
+            Text("3 games. 1 daily score. 100 points.")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+        }
+    }
+
+    private func gameList(_ profile: UserProfile) -> some View {
+        VStack(spacing: 0) {
+            ForEach(Self.games, id: \.self) { game in
+                compactGameRow(game, profile: profile)
+                if game != Self.games.last {
+                    Divider().padding(.leading, 74)
+                }
+            }
+        }
+        .background(Theme.cardBackground, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .strokeBorder(Theme.hairline.opacity(0.7), lineWidth: 0.5)
+        )
+    }
+
+    private func compactGameRow(_ game: BlipzGame, profile: UserProfile) -> some View {
+        let completed = isCompleted(game, profile)
+        return NavigationLink {
+            destination(for: game)
+        } label: {
+            Group {
+                if dynamicTypeSize.isAccessibilitySize {
+                    accessibleGameRowContent(game, profile: profile, completed: completed)
+                } else {
+                    standardGameRowContent(game, profile: profile, completed: completed)
+                }
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 11)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(CardPressStyle(reduceMotion: reduceMotion))
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(
+            completed
+                ? completedRowAccessibilityLabel(game, profile: profile)
+                : "\(title(game)), not yet played. \(readySubtitle(game))"
+        )
+    }
+
+    private func standardGameRowContent(_ game: BlipzGame, profile: UserProfile, completed: Bool) -> some View {
+        HStack(spacing: 12) {
+            completionIndicator(completed)
+            gameEmblem(game)
+            gameRowLabels(game, profile: profile, completed: completed, limitSubtitle: true)
+            Spacer(minLength: 8)
+            gameRowTrailing(game, profile: profile, completed: completed)
+        }
+    }
+
+    private func accessibleGameRowContent(_ game: BlipzGame, profile: UserProfile, completed: Bool) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(alignment: .top, spacing: 12) {
+                completionIndicator(completed)
+                gameEmblem(game)
+                gameRowLabels(game, profile: profile, completed: completed, limitSubtitle: false)
+                Spacer(minLength: 4)
+                if !completed {
+                    Image(systemName: "chevron.right")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(Color(.tertiaryLabel))
+                        .padding(.top, 8)
+                }
+            }
+            if completed {
+                Text(completedTrailingValue(game, profile: profile))
+                    .font(.body.weight(.semibold))
+                    .foregroundStyle(.primary)
+                    .frame(maxWidth: .infinity, alignment: .trailing)
+            }
+        }
+    }
+
+    private func gameRowLabels(
+        _ game: BlipzGame,
+        profile: UserProfile,
+        completed: Bool,
+        limitSubtitle: Bool
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 3) {
+            Text(title(game))
+                .font(.body.weight(.semibold))
+                .foregroundStyle(.primary)
+            Text(completed ? completedSubtitle(game, profile: profile) : readySubtitle(game))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .lineLimit(limitSubtitle ? 1 : nil)
+        }
+    }
+
+    @ViewBuilder
+    private func gameRowTrailing(_ game: BlipzGame, profile: UserProfile, completed: Bool) -> some View {
+        if completed {
+            Text(completedTrailingValue(game, profile: profile))
+                .font(.body.weight(.semibold))
+                .foregroundStyle(.primary)
+        } else {
+            Image(systemName: "chevron.right")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(Color(.tertiaryLabel))
+        }
+    }
+
+    private func completionIndicator(_ completed: Bool) -> some View {
+        Circle()
+            .fill(completed ? Theme.accent : Color.clear)
+            .overlay(
+                Circle().strokeBorder(completed ? Theme.accent : Color.secondary.opacity(0.55), lineWidth: 1.5)
+            )
+            .frame(width: 20, height: 20)
+            .overlay {
+                if completed {
+                    Image(systemName: "checkmark")
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundStyle(.white)
+                }
+            }
+            .accessibilityHidden(true)
+    }
+
+    private func gameEmblem(_ game: BlipzGame) -> some View {
+        let symbol: String = switch game {
+        case .guess: "photo"
+        case .maths: "plus.forwardslash.minus"
+        case .trivia: "questionmark"
+        }
+        return RoundedRectangle(cornerRadius: 10, style: .continuous)
+            .fill(Theme.accentWash)
+            .frame(width: 42, height: 42)
+            .overlay(
+                Image(systemName: symbol)
+                    .font(.system(size: 17, weight: .semibold))
+                    .foregroundStyle(Theme.accent)
+            )
+            .accessibilityHidden(true)
+    }
+
+    private func completedSubtitle(_ game: BlipzGame, profile: UserProfile) -> String {
+        switch game {
+        case .guess: return "Your score"
+        case .maths: return profile.mathsElapsedSeconds == nil ? "Completed" : "Elapsed time"
+        case .trivia: return "Correct answers"
+        }
+    }
+
+    private func completedTrailingValue(_ game: BlipzGame, profile: UserProfile) -> String {
+        switch game {
+        case .guess: return "\(scoreValue(game, profile)) /10"
+        case .maths: return mathsRowText(profile)
+        case .trivia: return "\(scoreValue(game, profile)) /5"
+        }
+    }
+
+    private func dailyProgress(_ profile: UserProfile) -> some View {
+        let done = completedGames(profile).count
+        return VStack(alignment: .leading, spacing: 14) {
+            HStack {
+                Text("Your daily progress")
+                    .font(.subheadline.weight(.semibold))
+                Spacer()
+                Text("\(done) / 3 games")
+                    .font(.caption.weight(.medium))
+            }
+
+            ProgressView(value: Double(done), total: 3)
+                .tint(Color.white.opacity(0.9))
+
+            HStack(alignment: .lastTextBaseline, spacing: 4) {
+                Text("Today's score")
+                    .font(.caption)
+                    .foregroundStyle(.white.opacity(0.75))
+                Spacer()
+                Text(profile.totalScore, format: .number.precision(.fractionLength(1)))
+                    .font(.blipzDisplay(size: 28, weight: .bold))
+                Text("/100")
+                    .font(.subheadline)
+                    .foregroundStyle(.white.opacity(0.75))
+            }
+        }
+        .foregroundStyle(.white)
+        .padding(16)
+        .background(Theme.accentPressed, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(done) of 3 games complete. Today's score \(profile.totalScore, specifier: "%.1f") out of 100")
+    }
+
+    private func nextGameButton(_ game: BlipzGame, continuing: Bool) -> some View {
+        NavigationLink {
+            destination(for: game)
+        } label: {
+            Text("\(continuing ? "Continue" : "Play"): \(title(game))")
+        }
+        .buttonStyle(PrimaryButtonStyle())
+        .simultaneousGesture(TapGesture().onEnded { Haptics.light() })
     }
 
     // MARK: - Headers
@@ -255,9 +463,10 @@ struct TodayView: View {
 
     private func headline(for doneCount: Int) -> String {
         switch doneCount {
-        case 0: return "Three games.\nOne score."
+        case 0: return "Let's keep it going."
         case 1: return "Two left."
-        default: return "One left."
+        case 2: return "One left."
+        default: return "All done for today."
         }
     }
 
