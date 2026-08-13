@@ -44,7 +44,7 @@ struct GuessGameView: View {
 
     private var playContent: some View {
         VStack(spacing: 20) {
-            imageView(aspectRatio: 4.0 / 5.0)
+            imageView(aspectRatio: 1.0)
 
             VStack(alignment: .leading, spacing: 16) {
                 Text("What prompt made this?")
