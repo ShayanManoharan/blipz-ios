@@ -11,22 +11,22 @@ struct OnboardingView: View {
 
     private struct GameBlurb: Identifiable {
         let id: String
-        let symbol: String
+        let game: BlipzGame
         let title: String
         let description: String
     }
 
     private static let games: [GameBlurb] = [
         GameBlurb(
-            id: "guess", symbol: "photo.fill", title: "AI Guess",
+            id: "guess", game: .guess, title: "AI Guess",
             description: "Describe today's AI-generated image and see how close you get."
         ),
         GameBlurb(
-            id: "maths", symbol: "bolt.fill", title: "Quick Maths",
+            id: "maths", game: .maths, title: "Quick Maths",
             description: "Solve 20 problems as fast as you can."
         ),
         GameBlurb(
-            id: "trivia", symbol: "questionmark.bubble.fill", title: "Daily Trivia",
+            id: "trivia", game: .trivia, title: "Daily Trivia",
             description: "Answer 5 new questions."
         ),
     ]
@@ -79,15 +79,7 @@ struct OnboardingView: View {
 
     private func gameRow(_ game: GameBlurb) -> some View {
         HStack(spacing: 16) {
-            Circle()
-                .fill(Theme.accent.opacity(0.15))
-                .frame(width: 44, height: 44)
-                .overlay(
-                    Image(systemName: game.symbol)
-                        .font(.system(size: 18, weight: .semibold))
-                        .foregroundStyle(Theme.accent)
-                )
-                .accessibilityHidden(true)
+            BlipzGameEmblem(game: game.game, size: 44)
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(game.title)

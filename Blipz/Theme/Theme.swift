@@ -3,12 +3,12 @@ import SwiftUI
 enum Theme {
     static let accent = Color.accentColor
 
-    // Direction 2a specifies a plain white background (no tint) — dark mode value
-    // is unchanged since the wireframe is light-mode-only.
+    // Direction A uses a near-white canvas. The warmth is intentionally slight: it
+    // separates elevated white surfaces without making the interface look beige.
     static let background = Color(uiColor: UIColor { trait in
         trait.userInterfaceStyle == .dark
             ? UIColor(red: 0.07, green: 0.07, blue: 0.09, alpha: 1)
-            : UIColor.white
+            : UIColor(red: 0.985, green: 0.982, blue: 0.975, alpha: 1)
     })
 
     static let cardBackground = Color(uiColor: UIColor { trait in
@@ -16,6 +16,57 @@ enum Theme {
             ? UIColor(red: 0.15, green: 0.15, blue: 0.18, alpha: 1)
             : UIColor.white
     })
+
+    static let secondarySurface = Color(uiColor: UIColor { trait in
+        trait.userInterfaceStyle == .dark
+            ? UIColor(red: 0.12, green: 0.12, blue: 0.145, alpha: 1)
+            : UIColor(red: 0.965, green: 0.958, blue: 0.945, alpha: 1)
+    })
+
+    static let accentSurface = Color(uiColor: UIColor { trait in
+        trait.userInterfaceStyle == .dark
+            ? UIColor(red: 0.04, green: 0.20, blue: 0.14, alpha: 1)
+            : UIColor(red: 0.91, green: 0.965, blue: 0.935, alpha: 1)
+    })
+
+    static let progressSurface = Color(uiColor: UIColor { trait in
+        trait.userInterfaceStyle == .dark
+            ? UIColor(red: 0.055, green: 0.18, blue: 0.13, alpha: 1)
+            : UIColor(red: 0.93, green: 0.97, blue: 0.945, alpha: 1)
+    })
+
+    static let avatarSurface = Color(uiColor: UIColor { trait in
+        trait.userInterfaceStyle == .dark
+            ? UIColor(red: 0.04, green: 0.25, blue: 0.17, alpha: 1)
+            : UIColor(red: 0.86, green: 0.94, blue: 0.895, alpha: 1)
+    })
+
+    static let symbolSurface = Color(uiColor: UIColor { trait in
+        trait.userInterfaceStyle == .dark
+            ? UIColor(red: 0.18, green: 0.18, blue: 0.21, alpha: 1)
+            : UIColor(red: 0.95, green: 0.945, blue: 0.93, alpha: 1)
+    })
+
+    static let guessSurface = Color(uiColor: UIColor { trait in
+        trait.userInterfaceStyle == .dark
+            ? UIColor(red: 0.04, green: 0.22, blue: 0.16, alpha: 1)
+            : UIColor(red: 0.88, green: 0.95, blue: 0.91, alpha: 1)
+    })
+
+    static let mathsSurface = Color(uiColor: UIColor { trait in
+        trait.userInterfaceStyle == .dark
+            ? UIColor(red: 0.04, green: 0.21, blue: 0.20, alpha: 1)
+            : UIColor(red: 0.88, green: 0.945, blue: 0.935, alpha: 1)
+    })
+
+    static let triviaSurface = Color(uiColor: UIColor { trait in
+        trait.userInterfaceStyle == .dark
+            ? UIColor(red: 0.16, green: 0.14, blue: 0.25, alpha: 1)
+            : UIColor(red: 0.94, green: 0.92, blue: 0.985, alpha: 1)
+    })
+
+    static let mathsAccent = Color(red: 0.0, green: 0.46, blue: 0.40)
+    static let triviaAccent = Color(red: 0.39, green: 0.31, blue: 0.72)
 
     static let success = Color(red: 0.20, green: 0.70, blue: 0.45)
     static let streak = Color.orange
@@ -41,9 +92,11 @@ enum Theme {
             : UIColor(red: 0.953, green: 0.973, blue: 0.961, alpha: 1)
     })
 
-    // Wireframe's "hairline" — native separator color, so it's correct in light and
-    // dark automatically instead of a hardcoded grey.
-    static let hairline = Color(uiColor: .separator)
+    static let hairline = Color(uiColor: UIColor { trait in
+        trait.userInterfaceStyle == .dark
+            ? UIColor.white.withAlphaComponent(0.10)
+            : UIColor.black.withAlphaComponent(0.055)
+    })
 
     // Token table's "Surface" — neutral tile fill (You's 5-day strip). #F2F1ED exactly,
     // per the addendum's explicit spec, not a native systemGray substitute.
@@ -64,6 +117,50 @@ private struct ScreenBackgroundModifier: ViewModifier {
 
 extension View {
     func screenBackground() -> some View { modifier(ScreenBackgroundModifier()) }
+}
+
+enum PremiumSurfaceLevel {
+    case elevated
+    case neutral
+    case accent
+}
+
+private struct PremiumSurfaceModifier: ViewModifier {
+    let level: PremiumSurfaceLevel
+    let cornerRadius: CGFloat
+    let shadow: Bool
+
+    private var fill: Color {
+        switch level {
+        case .elevated: Theme.cardBackground
+        case .neutral: Theme.secondarySurface
+        case .accent: Theme.accentSurface
+        }
+    }
+
+    func body(content: Content) -> some View {
+        content
+            .background(fill, in: RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                    .strokeBorder(Theme.hairline, lineWidth: 0.5)
+            )
+            .shadow(
+                color: shadow ? Color.black.opacity(0.055) : .clear,
+                radius: shadow ? 10 : 0,
+                y: shadow ? 4 : 0
+            )
+    }
+}
+
+extension View {
+    func premiumSurface(
+        _ level: PremiumSurfaceLevel = .elevated,
+        cornerRadius: CGFloat = 14,
+        shadow: Bool = true
+    ) -> some View {
+        modifier(PremiumSurfaceModifier(level: level, cornerRadius: cornerRadius, shadow: shadow))
+    }
 }
 
 // MARK: - Redesign container (direction 2a)

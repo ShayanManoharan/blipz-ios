@@ -1,4 +1,4 @@
-import Foundation
+import SwiftUI
 
 enum BlipzGame: Hashable {
     case guess
@@ -25,5 +25,103 @@ extension UserProfile {
         case .maths: return mathsCompleted
         case .trivia: return triviaCompleted
         }
+    }
+}
+
+struct BlipzGameEmblem: View {
+    let game: BlipzGame
+    var size: CGFloat = 40
+
+    var body: some View {
+        RoundedRectangle(cornerRadius: size * 0.26, style: .continuous)
+            .fill(surface)
+            .frame(width: size, height: size)
+            .overlay(symbol)
+            .overlay(
+                RoundedRectangle(cornerRadius: size * 0.26, style: .continuous)
+                    .strokeBorder(tint.opacity(0.10), lineWidth: 0.5)
+            )
+            .shadow(color: tint.opacity(0.08), radius: 4, y: 2)
+            .accessibilityHidden(true)
+    }
+
+    @ViewBuilder
+    private var symbol: some View {
+        switch game {
+        case .guess:
+            ZStack(alignment: .topTrailing) {
+                Image(systemName: "photo.on.rectangle.angled")
+                    .font(.system(size: size * 0.39, weight: .semibold))
+                Image(systemName: "sparkle")
+                    .font(.system(size: size * 0.18, weight: .bold))
+                    .offset(x: size * 0.09, y: -size * 0.08)
+            }
+            .foregroundStyle(tint)
+        case .maths:
+            Image(systemName: "plus.forwardslash.minus")
+                .font(.system(size: size * 0.40, weight: .semibold))
+                .foregroundStyle(tint)
+        case .trivia:
+            Image(systemName: "questionmark.bubble.fill")
+                .font(.system(size: size * 0.40, weight: .semibold))
+                .foregroundStyle(tint)
+        }
+    }
+
+    private var surface: Color {
+        switch game {
+        case .guess: Theme.guessSurface
+        case .maths: Theme.mathsSurface
+        case .trivia: Theme.triviaSurface
+        }
+    }
+
+    private var tint: Color {
+        switch game {
+        case .guess: Theme.accent
+        case .maths: Theme.mathsAccent
+        case .trivia: Theme.triviaAccent
+        }
+    }
+}
+
+struct BlipzSymbolTile: View {
+    let symbol: String
+    var tint: Color = Theme.accent
+    var size: CGFloat = 30
+
+    var body: some View {
+        RoundedRectangle(cornerRadius: size * 0.32, style: .continuous)
+            .fill(Theme.symbolSurface)
+            .frame(width: size, height: size)
+            .overlay(
+                Image(systemName: symbol)
+                    .font(.system(size: size * 0.43, weight: .medium))
+                    .foregroundStyle(tint)
+            )
+            .accessibilityHidden(true)
+    }
+}
+
+struct BlipzAvatar: View {
+    let name: String
+    var size: CGFloat = 36
+
+    var body: some View {
+        Circle()
+            .fill(Theme.avatarSurface)
+            .overlay(
+                Text(initial)
+                    .font(.system(size: size * 0.42, weight: .bold))
+                    .foregroundStyle(Theme.accent)
+            )
+            .overlay(Circle().strokeBorder(Theme.accent.opacity(0.08), lineWidth: 0.5))
+            .frame(width: size, height: size)
+            .accessibilityHidden(true)
+    }
+
+    private var initial: String {
+        guard let first = name.trimmingCharacters(in: .whitespaces).first else { return "?" }
+        return String(first).uppercased()
     }
 }
