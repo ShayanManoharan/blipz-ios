@@ -58,13 +58,13 @@ struct RanksView: View {
             }
         }
         .padding(.horizontal, 18)
-        .padding(.top, 14)
-        .padding(.bottom, 12)
+        .padding(.top, 10)
+        .padding(.bottom, 8)
     }
 
     private var ranksTitle: some View {
         Text("Ranks")
-            .font(.system(size: 30, weight: .bold))
+            .font(.system(size: 28, weight: .bold))
     }
 
     private var addFriendButton: some View {
@@ -73,7 +73,7 @@ struct RanksView: View {
             scope = .friends
         } label: {
             Label("Add friend", systemImage: "plus")
-                .font(.subheadline.weight(.semibold))
+                .font(.caption.weight(.semibold))
                 .foregroundStyle(Theme.accent)
         }
         .accessibilityHint("Switches to the Friends tab")
@@ -81,18 +81,18 @@ struct RanksView: View {
 
     // Underlined text tabs, not a filled iOS segmented control.
     private var segmentTabs: some View {
-        HStack(spacing: 24) {
+        HStack(spacing: 18) {
             ForEach(Scope.allCases, id: \.self) { s in
                 Button {
                     scope = s
                 } label: {
-                    VStack(spacing: 8) {
+                    VStack(spacing: 6) {
                         Text(s.rawValue)
                             .font(.subheadline.weight(scope == s ? .semibold : .regular))
                             .foregroundStyle(scope == s ? .primary : .secondary)
                         Rectangle()
                             .fill(scope == s ? Theme.accent : .clear)
-                            .frame(height: 2)
+                            .frame(height: 1.5)
                     }
                     .frame(maxWidth: .infinity)
                 }
@@ -101,7 +101,7 @@ struct RanksView: View {
             }
         }
         .padding(.horizontal, 18)
-        .padding(.bottom, 10)
+        .padding(.bottom, 6)
     }
 
     // MARK: - Add-by-username (Friends segment only, always at the top)
@@ -171,17 +171,18 @@ struct RanksView: View {
                 ForEach(entries) { entry in
                     rankRow(entry)
                     if entry.id != entries.last?.id {
-                        Divider().padding(.leading, 64)
+                        Divider().padding(.leading, 58)
                     }
                 }
             }
-            .background(Theme.cardBackground, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .background(Theme.cardBackground, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
             .overlay(
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .strokeBorder(Theme.hairline.opacity(0.7), lineWidth: 0.5)
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .strokeBorder(Theme.hairline.opacity(0.24), lineWidth: 0.5)
             )
+            .shadow(color: .black.opacity(0.04), radius: 7, y: 3)
             .padding(.horizontal, 18)
-            .padding(.top, 14)
+            .padding(.top, 8)
 
             if scope == .global {
                 globalTail
@@ -213,15 +214,15 @@ struct RanksView: View {
                         .frame(maxWidth: .infinity, alignment: .trailing)
                 }
             } else {
-                HStack(spacing: 12) {
+                HStack(spacing: 9) {
                     rankIdentity(entry, mine: mine)
-                    Spacer(minLength: 8)
+                    Spacer(minLength: 6)
                     rankScore(entry)
                 }
             }
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 12)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
         .background(mine ? Theme.accentWash : Color.clear)
         .accessibilityElement(children: .combine)
         .accessibilityLabel(
@@ -231,14 +232,14 @@ struct RanksView: View {
     }
 
     private func rankIdentity(_ entry: LeaderboardEntry, mine: Bool) -> some View {
-        HStack(spacing: 12) {
+        HStack(spacing: 9) {
             Text("\(entry.rank)")
                 .font(.subheadline.weight(mine ? .bold : .regular))
                 .foregroundStyle(mine ? Theme.accent : .secondary)
-                .frame(width: 24, alignment: .leading)
-            InitialsAvatar(name: entry.username, size: 32)
+                .frame(width: 20, alignment: .leading)
+            InitialsAvatar(name: entry.username, size: 28)
             Text(entry.username)
-                .font(.body.weight(mine ? .semibold : .regular))
+                .font(.subheadline.weight(mine ? .semibold : .regular))
                 .lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : 1)
                 .truncationMode(.tail)
         }
@@ -250,7 +251,7 @@ struct RanksView: View {
                 Text("\(entry.rank)")
                     .font(.subheadline.weight(mine ? .bold : .regular))
                     .foregroundStyle(mine ? Theme.accent : .secondary)
-                InitialsAvatar(name: entry.username, size: 32)
+                InitialsAvatar(name: entry.username, size: 28)
             }
             Text(entry.username)
                 .font(.body.weight(mine ? .semibold : .regular))
@@ -261,7 +262,7 @@ struct RanksView: View {
     private func rankScore(_ entry: LeaderboardEntry) -> some View {
         HStack(alignment: .lastTextBaseline, spacing: 3) {
             Text(entry.totalScore, format: .number.precision(.fractionLength(1)))
-                .font(.blipzDisplay(size: 17, weight: .medium))
+                .font(.blipzDisplay(size: 16, weight: .medium))
                 .foregroundStyle(isCurrentUser(entry) ? Theme.accent : .primary)
             Text("/100")
                 .font(.caption2)
@@ -272,23 +273,22 @@ struct RanksView: View {
     @ViewBuilder
     private var emptyState: some View {
         if scope == .friends {
-            VStack(spacing: 10) {
+            VStack(spacing: 8) {
                 Text("Nobody to beat yet")
-                    .font(.title3.weight(.medium))
+                    .font(.headline)
                 Text("Add one friend and the daily score turns into an argument.")
-                    .font(.subheadline)
+                    .font(.caption)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
 
-                inviteShareLink(label: "Share invite link")
-                    .buttonStyle(OutlineButtonStyle())
-                    .padding(.top, 8)
+                compactInviteLink(label: "Share invite link")
+                    .padding(.top, 2)
             }
             .frame(maxWidth: .infinity)
-            .padding(20)
-            .outlinedContainer()
+            .padding(14)
+            .background(Theme.surface.opacity(0.55), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
             .padding(.horizontal, 18)
-            .padding(.top, 20)
+            .padding(.top, 12)
         } else {
             Text("No scores yet today")
                 .font(.subheadline)
@@ -299,38 +299,38 @@ struct RanksView: View {
     }
 
     private var globalTail: some View {
-        VStack(spacing: 14) {
-            Circle()
-                .fill(Theme.surface)
-                .frame(width: 44, height: 44)
-                .overlay(
-                    Image(systemName: "globe")
-                        .foregroundStyle(Theme.accent)
-                )
-                .accessibilityHidden(true)
-            VStack(spacing: 2) {
-                Text("That's everyone so far.")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                Text("The board fills up through the day.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+        VStack(spacing: 10) {
+            HStack(spacing: 10) {
+                Circle()
+                    .fill(Theme.surface.opacity(0.85))
+                    .frame(width: 34, height: 34)
+                    .overlay(
+                        Image(systemName: "globe")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundStyle(Theme.accent)
+                    )
+                    .accessibilityHidden(true)
+                VStack(alignment: .leading, spacing: 1) {
+                    Text("That's everyone so far.")
+                        .font(.caption.weight(.medium))
+                        .foregroundStyle(.secondary)
+                    Text("The board fills up through the day.")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
+                Spacer(minLength: 0)
             }
-            .multilineTextAlignment(.center)
 
-            inviteShareLink(label: "Invite a friend")
-                .buttonStyle(PrimaryButtonStyle())
+            compactInviteLink(label: "Invite a friend")
         }
-        .padding(.top, 24)
-        .padding(.bottom, 18)
-        .padding(.horizontal, 18)
-        .background(Theme.cardBackground, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .padding(12)
+        .background(Theme.surface.opacity(0.42), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
         .overlay(
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .strokeBorder(Theme.hairline.opacity(0.7), lineWidth: 0.5)
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .strokeBorder(Theme.hairline.opacity(0.18), lineWidth: 0.5)
         )
         .padding(.horizontal, 18)
-        .padding(.top, 18)
+        .padding(.top, 12)
     }
 
     // Real, working share sheet (no fabricated invite link/code — the app has no such
@@ -344,6 +344,15 @@ struct RanksView: View {
         return ShareLink(item: text) {
             Text(label)
         }
+    }
+
+    private func compactInviteLink(label: String) -> some View {
+        inviteShareLink(label: label)
+            .font(.subheadline.weight(.semibold))
+            .foregroundStyle(.white)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 9)
+            .background(Theme.accent, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
     }
 }
 
