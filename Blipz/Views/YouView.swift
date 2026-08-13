@@ -62,25 +62,25 @@ struct YouView: View {
             if dynamicTypeSize.isAccessibilitySize {
                 VStack(alignment: .leading, spacing: 6) {
                     Text("You")
-                        .font(.system(size: 30, weight: .bold))
+                        .font(.system(size: 28, weight: .bold))
                     Text("Settings ›")
-                        .font(.subheadline)
+                        .font(.caption)
                         .foregroundStyle(.secondary)
                 }
             } else {
                 HStack {
                     Text("You")
-                        .font(.system(size: 30, weight: .bold))
+                        .font(.system(size: 28, weight: .bold))
                     Spacer()
                     Text("Settings ›")
-                        .font(.subheadline)
+                        .font(.caption)
                         .foregroundStyle(.secondary)
                 }
             }
         }
         .padding(.horizontal, 18)
-        .padding(.top, 14)
-        .padding(.bottom, 16)
+        .padding(.top, 10)
+        .padding(.bottom, 10)
     }
 
     // MARK: - Identity
@@ -89,20 +89,20 @@ struct YouView: View {
     // endpoint yet, so it can't actually do anything if tapped.
 
     private func identityRow(_ profile: UserProfile) -> some View {
-        HStack(spacing: 14) {
+        HStack(spacing: 12) {
             Circle()
                 .fill(Theme.accent.opacity(0.15))
-                .frame(width: 56, height: 56)
+                .frame(width: 48, height: 48)
                 .overlay(
                     Text(initial(displayName(profile)))
-                        .font(.title2.weight(.bold))
+                        .font(.title3.weight(.bold))
                         .foregroundStyle(Theme.accent)
                 )
                 .accessibilityHidden(true)
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(displayName(profile))
-                    .font(.title3.weight(.semibold))
+                    .font(.headline)
                 Text("Pick a username ›")
                     .font(.caption)
                     .foregroundStyle(Theme.accent)
@@ -110,7 +110,7 @@ struct YouView: View {
             Spacer()
         }
         .padding(.horizontal, 18)
-        .padding(.bottom, 20)
+        .padding(.bottom, 14)
     }
 
     private func displayName(_ profile: UserProfile) -> String {
@@ -147,24 +147,25 @@ struct YouView: View {
                 }
             }
         }
-        .background(Theme.cardBackground, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .background(Theme.cardBackground, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
         .overlay(
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .strokeBorder(Theme.hairline.opacity(0.7), lineWidth: 0.5)
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .strokeBorder(Theme.hairline.opacity(0.22), lineWidth: 0.5)
         )
+        .shadow(color: .black.opacity(0.04), radius: 7, y: 3)
         .padding(.horizontal, 18)
     }
 
     private func statTile(value: String, label: String) -> some View {
-        VStack(spacing: 4) {
+        VStack(spacing: 3) {
             Text(value)
-                .font(.blipzDisplay(size: 24, weight: .bold))
+                .font(.blipzDisplay(size: 21, weight: .bold))
             Text(label)
-                .font(.caption)
+                .font(.caption2)
                 .foregroundStyle(.secondary)
         }
         .frame(maxWidth: .infinity)
-        .padding(.vertical, 16)
+        .padding(.vertical, 12)
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(value) \(label)")
     }
@@ -175,7 +176,7 @@ struct YouView: View {
                 .foregroundStyle(.secondary)
             Spacer(minLength: 12)
             Text(value)
-                .font(.blipzDisplay(size: 24, weight: .bold))
+                .font(.blipzDisplay(size: 21, weight: .bold))
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
@@ -188,10 +189,10 @@ struct YouView: View {
     // "All history ›" is a static placeholder — there's no full-history screen yet.
 
     private var historySection: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 9) {
             HStack {
                 Text("Last 5 days")
-                    .font(.subheadline)
+                    .font(.caption)
                     .foregroundStyle(.secondary)
                 Spacer()
                 Text("All history ›")
@@ -211,15 +212,17 @@ struct YouView: View {
             } else {
                 // GeometryReader guarantees equally sized tiles across the card.
                 GeometryReader { geo in
-                    let spacing: CGFloat = 8
-                    let tileSize = (geo.size.width - spacing * 4) / 5
-                    HStack(spacing: spacing) {
+                    let tileSize = min(50, (geo.size.width - 28) / 5)
+                    HStack(spacing: 0) {
                         ForEach(last5Days, id: \.date) { day in
                             historyTile(day, size: tileSize)
+                            if day.date != last5Days.last?.date {
+                                Spacer(minLength: 7)
+                            }
                         }
                     }
                 }
-                .frame(height: 82)
+                .frame(height: 68)
             }
 
             // The scoring formula changed on 2026-08-06 (see backend app/scoring.py) —
@@ -233,15 +236,9 @@ struct YouView: View {
                     .foregroundStyle(.secondary)
             }
         }
-        .padding(16)
-        .background(Theme.cardBackground, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .strokeBorder(Theme.hairline.opacity(0.7), lineWidth: 0.5)
-        )
         .padding(.horizontal, 18)
-        .padding(.top, 18)
-        .padding(.bottom, 18)
+        .padding(.top, 14)
+        .padding(.bottom, 16)
     }
 
     private var last5Days: [(date: Date, label: String, score: Double?, isLegacyScoring: Bool)] {
@@ -263,7 +260,7 @@ struct YouView: View {
 
     private func historyTile(_ day: (date: Date, label: String, score: Double?, isLegacyScoring: Bool), size: CGFloat) -> some View {
         let isToday = Calendar.current.isDateInToday(day.date)
-        return VStack(spacing: 6) {
+        return VStack(spacing: 4) {
             RoundedRectangle(cornerRadius: 10, style: .continuous)
                 .fill(isToday ? Theme.accent : Theme.surface)
                 .frame(width: size, height: size)
@@ -341,18 +338,19 @@ struct YouView: View {
                         .frame(maxWidth: .infinity, alignment: .trailing)
                 }
             }
-            .padding(.horizontal, 14)
-            .padding(.vertical, 14)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 11)
 
-            Divider().padding(.leading, 48)
+            Divider().padding(.leading, 42)
 
             Button {
                 Haptics.light()
                 showingOnboarding = true
             } label: {
-                HStack(spacing: 12) {
+                HStack(spacing: 10) {
                     Image(systemName: "questionmark.circle")
-                        .frame(width: 22)
+                        .font(.system(size: 14))
+                        .frame(width: 20)
                         .foregroundStyle(.secondary)
                     Text("How Blipz works")
                         .foregroundStyle(.primary)
@@ -361,29 +359,33 @@ struct YouView: View {
                         .font(.caption.weight(.semibold))
                         .foregroundStyle(Color(.tertiaryLabel))
                 }
-                .padding(.horizontal, 14)
-                .padding(.vertical, 14)
+                .font(.subheadline)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 11)
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
             .accessibilityHint("Replays the intro screen")
         }
-        .background(Theme.cardBackground, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .background(Theme.cardBackground, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
         .overlay(
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .strokeBorder(Theme.hairline.opacity(0.7), lineWidth: 0.5)
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .strokeBorder(Theme.hairline.opacity(0.22), lineWidth: 0.5)
         )
+        .shadow(color: .black.opacity(0.035), radius: 6, y: 2)
         .padding(.horizontal, 18)
-        .padding(.bottom, 24)
+        .padding(.bottom, 18)
     }
 
     private var reminderLabel: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: 10) {
             Image(systemName: "bell")
-                .frame(width: 22)
+                .font(.system(size: 14))
+                .frame(width: 20)
                 .foregroundStyle(.secondary)
             Text("Daily reminder")
         }
+        .font(.subheadline)
     }
 
     private var reminderStatus: some View {
