@@ -176,37 +176,34 @@ struct TodayView: View {
     // MARK: - Masthead
 
     private func masthead(_ profile: UserProfile) -> some View {
-        VStack(spacing: 0) {
-            HStack {
-                Text("BLIPZ")
-                    .font(.blipzDisplay(size: 17, weight: .bold))
-                    .tracking(17 * 0.18)
-                Spacer()
-                HStack(spacing: 5) {
-                    Image(systemName: "flame.fill")
-                        .font(.caption)
-                        .foregroundStyle(Theme.streak)
-                    Text("\(profile.currentStreak) day streak")
-                        .font(.caption.weight(.medium))
-                }
-                .padding(.horizontal, 10)
-                .padding(.vertical, 7)
-                .background(Theme.surface, in: Capsule())
-                .accessibilityElement(children: .combine)
-                .accessibilityLabel("\(profile.currentStreak) day streak")
+        HStack {
+            Text("BLIPZ")
+                .font(.blipzDisplay(size: 16, weight: .bold))
+                .tracking(16 * 0.14)
+            Spacer()
+            HStack(spacing: 4) {
+                Image(systemName: "flame.fill")
+                    .font(.system(size: 10, weight: .semibold))
+                    .foregroundStyle(Theme.streak)
+                Text("\(profile.currentStreak) day streak")
+                    .font(.system(size: 11, weight: .medium))
             }
-            .padding(.horizontal, 18)
-            .padding(.vertical, 12)
-
-            Divider()
+            .padding(.horizontal, 9)
+            .padding(.vertical, 6)
+            .background(Theme.surface.opacity(0.8), in: Capsule())
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel("\(profile.currentStreak) day streak")
         }
+        .padding(.horizontal, 18)
+        .padding(.top, 8)
+        .padding(.bottom, 7)
     }
 
     // MARK: - Main content
 
     @ViewBuilder
     private func content(_ profile: UserProfile) -> some View {
-        VStack(alignment: .leading, spacing: 18) {
+        VStack(alignment: .leading, spacing: 12) {
             dailyHeader(profile)
             gameList(profile)
             dailyProgress(profile)
@@ -224,22 +221,22 @@ struct TodayView: View {
             boardTeaser
         }
         .padding(.horizontal, 18)
-        .padding(.top, 18)
-        .padding(.bottom, 24)
+        .padding(.top, 10)
+        .padding(.bottom, 18)
     }
 
     // MARK: - Direction A daily hierarchy
 
     private func dailyHeader(_ profile: UserProfile) -> some View {
         let doneCount = completedGames(profile).count
-        return VStack(alignment: .leading, spacing: 6) {
+        return VStack(alignment: .leading, spacing: 3) {
             Text(Date.now.formatted(.dateTime.weekday(.wide).month(.abbreviated).day()))
-                .font(.subheadline)
+                .font(.caption)
                 .foregroundStyle(.secondary)
             Text(headline(for: doneCount))
-                .font(.system(size: 26, weight: .bold))
+                .font(.title2.weight(.semibold))
             Text("3 games. 1 daily score. 100 points.")
-                .font(.subheadline)
+                .font(.caption)
                 .foregroundStyle(.secondary)
         }
     }
@@ -249,15 +246,16 @@ struct TodayView: View {
             ForEach(Self.games, id: \.self) { game in
                 compactGameRow(game, profile: profile)
                 if game != Self.games.last {
-                    Divider().padding(.leading, 74)
+                    Divider().padding(.leading, 64)
                 }
             }
         }
-        .background(Theme.cardBackground, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .background(Theme.cardBackground, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
         .overlay(
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .strokeBorder(Theme.hairline.opacity(0.7), lineWidth: 0.5)
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .strokeBorder(Theme.hairline.opacity(0.24), lineWidth: 0.5)
         )
+        .shadow(color: .black.opacity(0.045), radius: 7, y: 3)
     }
 
     private func compactGameRow(_ game: BlipzGame, profile: UserProfile) -> some View {
@@ -272,8 +270,8 @@ struct TodayView: View {
                     standardGameRowContent(game, profile: profile, completed: completed)
                 }
             }
-            .padding(.horizontal, 14)
-            .padding(.vertical, 11)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 7)
             .contentShape(Rectangle())
         }
         .buttonStyle(CardPressStyle(reduceMotion: reduceMotion))
@@ -286,18 +284,18 @@ struct TodayView: View {
     }
 
     private func standardGameRowContent(_ game: BlipzGame, profile: UserProfile, completed: Bool) -> some View {
-        HStack(spacing: 12) {
+        HStack(spacing: 10) {
             completionIndicator(completed)
             gameEmblem(game)
             gameRowLabels(game, profile: profile, completed: completed, limitSubtitle: true)
-            Spacer(minLength: 8)
+            Spacer(minLength: 6)
             gameRowTrailing(game, profile: profile, completed: completed)
         }
     }
 
     private func accessibleGameRowContent(_ game: BlipzGame, profile: UserProfile, completed: Bool) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack(alignment: .top, spacing: 12) {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(alignment: .top, spacing: 10) {
                 completionIndicator(completed)
                 gameEmblem(game)
                 gameRowLabels(game, profile: profile, completed: completed, limitSubtitle: false)
@@ -324,12 +322,12 @@ struct TodayView: View {
         completed: Bool,
         limitSubtitle: Bool
     ) -> some View {
-        VStack(alignment: .leading, spacing: 3) {
+        VStack(alignment: .leading, spacing: 1) {
             Text(title(game))
-                .font(.body.weight(.semibold))
+                .font(.subheadline.weight(.semibold))
                 .foregroundStyle(.primary)
             Text(completed ? completedSubtitle(game, profile: profile) : readySubtitle(game))
-                .font(.caption)
+                .font(.caption2)
                 .foregroundStyle(.secondary)
                 .lineLimit(limitSubtitle ? 1 : nil)
         }
@@ -339,7 +337,7 @@ struct TodayView: View {
     private func gameRowTrailing(_ game: BlipzGame, profile: UserProfile, completed: Bool) -> some View {
         if completed {
             Text(completedTrailingValue(game, profile: profile))
-                .font(.body.weight(.semibold))
+                .font(.subheadline.weight(.semibold))
                 .foregroundStyle(.primary)
         } else {
             Image(systemName: "chevron.right")
@@ -354,11 +352,11 @@ struct TodayView: View {
             .overlay(
                 Circle().strokeBorder(completed ? Theme.accent : Color.secondary.opacity(0.55), lineWidth: 1.5)
             )
-            .frame(width: 20, height: 20)
+            .frame(width: 18, height: 18)
             .overlay {
                 if completed {
                     Image(systemName: "checkmark")
-                        .font(.system(size: 10, weight: .bold))
+                        .font(.system(size: 9, weight: .bold))
                         .foregroundStyle(.white)
                 }
             }
@@ -371,15 +369,31 @@ struct TodayView: View {
         case .maths: "plus.forwardslash.minus"
         case .trivia: "questionmark"
         }
-        return RoundedRectangle(cornerRadius: 10, style: .continuous)
-            .fill(Theme.accentWash)
-            .frame(width: 42, height: 42)
+        return RoundedRectangle(cornerRadius: 9, style: .continuous)
+            .fill(emblemBackground(game))
+            .frame(width: 36, height: 36)
             .overlay(
                 Image(systemName: symbol)
-                    .font(.system(size: 17, weight: .semibold))
-                    .foregroundStyle(Theme.accent)
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(emblemForeground(game))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 9, style: .continuous)
+                    .strokeBorder(emblemForeground(game).opacity(0.08), lineWidth: 0.5)
             )
             .accessibilityHidden(true)
+    }
+
+    private func emblemBackground(_ game: BlipzGame) -> Color {
+        switch game {
+        case .guess: return Theme.accent.opacity(0.08)
+        case .maths: return Theme.accent.opacity(0.13)
+        case .trivia: return Color.indigo.opacity(0.09)
+        }
+    }
+
+    private func emblemForeground(_ game: BlipzGame) -> Color {
+        game == .trivia ? Color.indigo.opacity(0.85) : Theme.accent
     }
 
     private func completedSubtitle(_ game: BlipzGame, profile: UserProfile) -> String {
@@ -400,13 +414,13 @@ struct TodayView: View {
 
     private func dailyProgress(_ profile: UserProfile) -> some View {
         let done = completedGames(profile).count
-        return VStack(alignment: .leading, spacing: 14) {
+        return VStack(alignment: .leading, spacing: 9) {
             HStack {
                 Text("Your daily progress")
-                    .font(.subheadline.weight(.semibold))
+                    .font(.caption.weight(.semibold))
                 Spacer()
                 Text("\(done) / 3 games")
-                    .font(.caption.weight(.medium))
+                    .font(.caption2.weight(.medium))
             }
 
             ProgressView(value: Double(done), total: 3)
@@ -414,19 +428,21 @@ struct TodayView: View {
 
             HStack(alignment: .lastTextBaseline, spacing: 4) {
                 Text("Today's score")
-                    .font(.caption)
+                    .font(.caption2)
                     .foregroundStyle(.white.opacity(0.75))
                 Spacer()
                 Text(profile.totalScore, format: .number.precision(.fractionLength(1)))
-                    .font(.blipzDisplay(size: 28, weight: .bold))
+                    .font(.blipzDisplay(size: 24, weight: .bold))
                 Text("/100")
-                    .font(.subheadline)
+                    .font(.caption)
                     .foregroundStyle(.white.opacity(0.75))
             }
         }
         .foregroundStyle(.white)
-        .padding(16)
-        .background(Theme.accentPressed, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .padding(.horizontal, 14)
+        .padding(.vertical, 12)
+        .background(Theme.accentPressed.opacity(0.94), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .shadow(color: Theme.accentPressed.opacity(0.12), radius: 7, y: 3)
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(done) of 3 games complete. Today's score \(profile.totalScore, specifier: "%.1f") out of 100")
     }
@@ -436,8 +452,13 @@ struct TodayView: View {
             destination(for: game)
         } label: {
             Text("\(continuing ? "Continue" : "Play"): \(title(game))")
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(.white)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 11)
+                .background(Theme.accent, in: RoundedRectangle(cornerRadius: 11, style: .continuous))
         }
-        .buttonStyle(PrimaryButtonStyle())
+        .buttonStyle(.plain)
         .simultaneousGesture(TapGesture().onEnded { Haptics.light() })
     }
 
@@ -643,30 +664,31 @@ struct TodayView: View {
     // MARK: - Footer (not-complete states)
 
     private var boardTeaser: some View {
-        VStack(spacing: 12) {
-            Divider()
-            Button {
-                Haptics.light()
-                TabRouter.shared.selected = .ranks
-            } label: {
-                HStack {
-                    Text("Today's board")
-                        .foregroundStyle(.primary)
-                    Spacer()
-                    if let playersToday {
-                        Text("\(playersToday) played ›")
-                            .foregroundStyle(.secondary)
-                    } else {
-                        Text("›")
-                            .foregroundStyle(.secondary)
-                    }
+        Button {
+            Haptics.light()
+            TabRouter.shared.selected = .ranks
+        } label: {
+            HStack(spacing: 8) {
+                Text("Today's board")
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundStyle(.primary)
+                Spacer()
+                if let playersToday {
+                    Text("\(playersToday) played")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                 }
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 10, weight: .semibold))
+                    .foregroundStyle(Color(.tertiaryLabel))
             }
-            .buttonStyle(.plain)
-            .accessibilityLabel(playersToday.map { "Today's board, \($0) played today" } ?? "Today's board")
-            .accessibilityHint("Opens Ranks")
+            .padding(.horizontal, 2)
+            .padding(.vertical, 5)
+            .contentShape(Rectangle())
         }
-        .padding(.top, 8)
+        .buttonStyle(.plain)
+        .accessibilityLabel(playersToday.map { "Today's board, \($0) played today" } ?? "Today's board")
+        .accessibilityHint("Opens Ranks")
     }
 
     // MARK: - Complete-state extras
