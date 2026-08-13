@@ -206,15 +206,11 @@ struct TodayView: View {
         VStack(alignment: .leading, spacing: 12) {
             dailyHeader(profile)
             gameList(profile)
-            dailyProgress(profile)
 
             if let next = upNextGame(profile) {
-                nextGameButton(next, continuing: !completedGames(profile).isEmpty)
-                Text("Finish all three games to lock in today's score")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .frame(maxWidth: .infinity)
+                progressAndNextAction(profile, next: next)
             } else {
+                dailyProgress(profile)
                 completeExtras(profile)
             }
 
@@ -250,12 +246,7 @@ struct TodayView: View {
                 }
             }
         }
-        .background(Theme.cardBackground, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .strokeBorder(Theme.hairline.opacity(0.24), lineWidth: 0.5)
-        )
-        .shadow(color: .black.opacity(0.045), radius: 7, y: 3)
+        .premiumSurface(.elevated, cornerRadius: 14)
     }
 
     private func compactGameRow(_ game: BlipzGame, profile: UserProfile) -> some View {
@@ -272,6 +263,9 @@ struct TodayView: View {
             }
             .padding(.horizontal, 12)
             .padding(.vertical, 7)
+            .background(
+                isCompleted(game, profile) ? Theme.accentSurface.opacity(0.30) : Color.clear
+            )
             .contentShape(Rectangle())
         }
         .buttonStyle(CardPressStyle(reduceMotion: reduceMotion))
@@ -364,36 +358,7 @@ struct TodayView: View {
     }
 
     private func gameEmblem(_ game: BlipzGame) -> some View {
-        let symbol: String = switch game {
-        case .guess: "photo"
-        case .maths: "plus.forwardslash.minus"
-        case .trivia: "questionmark"
-        }
-        return RoundedRectangle(cornerRadius: 9, style: .continuous)
-            .fill(emblemBackground(game))
-            .frame(width: 36, height: 36)
-            .overlay(
-                Image(systemName: symbol)
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundStyle(emblemForeground(game))
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 9, style: .continuous)
-                    .strokeBorder(emblemForeground(game).opacity(0.08), lineWidth: 0.5)
-            )
-            .accessibilityHidden(true)
-    }
-
-    private func emblemBackground(_ game: BlipzGame) -> Color {
-        switch game {
-        case .guess: return Theme.accent.opacity(0.08)
-        case .maths: return Theme.accent.opacity(0.13)
-        case .trivia: return Color.indigo.opacity(0.09)
-        }
-    }
-
-    private func emblemForeground(_ game: BlipzGame) -> Color {
-        game == .trivia ? Color.indigo.opacity(0.85) : Theme.accent
+        BlipzGameEmblem(game: game, size: 36)
     }
 
     private func completedSubtitle(_ game: BlipzGame, profile: UserProfile) -> String {
@@ -414,37 +379,60 @@ struct TodayView: View {
 
     private func dailyProgress(_ profile: UserProfile) -> some View {
         let done = completedGames(profile).count
-        return VStack(alignment: .leading, spacing: 9) {
+        return VStack(alignment: .leading, spacing: 10) {
             HStack {
-                Text("Your daily progress")
+                Label("Daily progress", systemImage: "circle.dotted.circle")
                     .font(.caption.weight(.semibold))
+                    .foregroundStyle(Theme.accentPressed)
                 Spacer()
                 Text("\(done) / 3 games")
                     .font(.caption2.weight(.medium))
+                    .foregroundStyle(.secondary)
             }
 
-            ProgressView(value: Double(done), total: 3)
-                .tint(Color.white.opacity(0.9))
+            GeometryReader { geometry in
+                Capsule()
+                    .fill(Theme.accent.opacity(0.10))
+                    .overlay(alignment: .leading) {
+                        Capsule()
+                            .fill(Theme.accent.opacity(0.72))
+                            .frame(width: geometry.size.width * Double(done) / 3)
+                    }
+            }
+            .frame(height: 7)
 
             HStack(alignment: .lastTextBaseline, spacing: 4) {
                 Text("Today's score")
                     .font(.caption2)
-                    .foregroundStyle(.white.opacity(0.75))
+                    .foregroundStyle(.secondary)
                 Spacer()
                 Text(profile.totalScore, format: .number.precision(.fractionLength(1)))
                     .font(.blipzDisplay(size: 24, weight: .bold))
+                    .foregroundStyle(Theme.accentPressed)
                 Text("/100")
                     .font(.caption)
-                    .foregroundStyle(.white.opacity(0.75))
+                    .foregroundStyle(.secondary)
             }
         }
-        .foregroundStyle(.white)
         .padding(.horizontal, 14)
         .padding(.vertical, 12)
-        .background(Theme.accentPressed.opacity(0.94), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-        .shadow(color: Theme.accentPressed.opacity(0.12), radius: 7, y: 3)
+        .background(Theme.progressSurface, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .strokeBorder(Theme.accent.opacity(0.08), lineWidth: 0.5)
+        )
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(done) of 3 games complete. Today's score \(profile.totalScore, specifier: "%.1f") out of 100")
+    }
+
+    private func progressAndNextAction(_ profile: UserProfile, next: BlipzGame) -> some View {
+        VStack(spacing: 9) {
+            dailyProgress(profile)
+            nextGameButton(next, continuing: !completedGames(profile).isEmpty)
+            Text("Finish all three games to lock in today's score")
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+        }
     }
 
     private func nextGameButton(_ game: BlipzGame, continuing: Bool) -> some View {
@@ -455,8 +443,9 @@ struct TodayView: View {
                 .font(.subheadline.weight(.semibold))
                 .foregroundStyle(.white)
                 .frame(maxWidth: .infinity)
-                .padding(.vertical, 11)
-                .background(Theme.accent, in: RoundedRectangle(cornerRadius: 11, style: .continuous))
+                .padding(.vertical, 10)
+                .background(Theme.accentPressed, in: RoundedRectangle(cornerRadius: 11, style: .continuous))
+                .shadow(color: Theme.accent.opacity(0.10), radius: 5, y: 2)
         }
         .buttonStyle(.plain)
         .simultaneousGesture(TapGesture().onEnded { Haptics.light() })
@@ -669,6 +658,7 @@ struct TodayView: View {
             TabRouter.shared.selected = .ranks
         } label: {
             HStack(spacing: 8) {
+                BlipzSymbolTile(symbol: "list.number", tint: Theme.accent, size: 26)
                 Text("Today's board")
                     .font(.system(size: 13, weight: .medium))
                     .foregroundStyle(.primary)
@@ -683,10 +673,12 @@ struct TodayView: View {
                     .foregroundStyle(Color(.tertiaryLabel))
             }
             .padding(.horizontal, 2)
-            .padding(.vertical, 5)
+            .padding(.vertical, 7)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .padding(.horizontal, 10)
+        .background(Theme.secondarySurface.opacity(0.72), in: RoundedRectangle(cornerRadius: 11, style: .continuous))
         .accessibilityLabel(playersToday.map { "Today's board, \($0) played today" } ?? "Today's board")
         .accessibilityHint("Opens Ranks")
     }
