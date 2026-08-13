@@ -72,9 +72,15 @@ struct RanksView: View {
             Haptics.light()
             scope = .friends
         } label: {
-            Label("Add friend", systemImage: "plus")
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(Theme.accent)
+            HStack(spacing: 6) {
+                Image(systemName: "plus")
+                    .font(.system(size: 11, weight: .semibold))
+                    .frame(width: 20, height: 20)
+                    .background(Theme.accentSurface, in: Circle())
+                Text("Add friend")
+            }
+            .font(.caption.weight(.semibold))
+            .foregroundStyle(Theme.accentPressed)
         }
         .accessibilityHint("Switches to the Friends tab")
     }
@@ -114,10 +120,8 @@ struct RanksView: View {
                     .textInputAutocapitalization(.never)
                     .autocorrectionDisabled()
                     .padding(12)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 10, style: .continuous)
-                            .strokeBorder(Color.primary.opacity(0.85), lineWidth: 1.5)
-                    )
+                    .background(Theme.secondarySurface, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                    .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(Theme.hairline, lineWidth: 0.5))
 
                 Button("Add") {
                     Haptics.light()
@@ -175,12 +179,7 @@ struct RanksView: View {
                     }
                 }
             }
-            .background(Theme.cardBackground, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .strokeBorder(Theme.hairline.opacity(0.24), lineWidth: 0.5)
-            )
-            .shadow(color: .black.opacity(0.04), radius: 7, y: 3)
+            .premiumSurface(.elevated, cornerRadius: 14)
             .padding(.horizontal, 18)
             .padding(.top, 8)
 
@@ -223,7 +222,7 @@ struct RanksView: View {
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
-        .background(mine ? Theme.accentWash : Color.clear)
+        .background(mine ? Theme.accentSurface : Color.clear)
         .accessibilityElement(children: .combine)
         .accessibilityLabel(
             "Rank \(entry.rank), \(entry.username)\(mine ? ", you" : ""), "
@@ -237,7 +236,7 @@ struct RanksView: View {
                 .font(.subheadline.weight(mine ? .bold : .regular))
                 .foregroundStyle(mine ? Theme.accent : .secondary)
                 .frame(width: 20, alignment: .leading)
-            InitialsAvatar(name: entry.username, size: 28)
+            BlipzAvatar(name: entry.username, size: 28)
             Text(entry.username)
                 .font(.subheadline.weight(mine ? .semibold : .regular))
                 .lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : 1)
@@ -251,7 +250,7 @@ struct RanksView: View {
                 Text("\(entry.rank)")
                     .font(.subheadline.weight(mine ? .bold : .regular))
                     .foregroundStyle(mine ? Theme.accent : .secondary)
-                InitialsAvatar(name: entry.username, size: 28)
+                BlipzAvatar(name: entry.username, size: 28)
             }
             Text(entry.username)
                 .font(.body.weight(mine ? .semibold : .regular))
@@ -286,7 +285,7 @@ struct RanksView: View {
             }
             .frame(maxWidth: .infinity)
             .padding(14)
-            .background(Theme.surface.opacity(0.55), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .premiumSurface(.neutral, cornerRadius: 13, shadow: false)
             .padding(.horizontal, 18)
             .padding(.top, 12)
         } else {
@@ -301,15 +300,7 @@ struct RanksView: View {
     private var globalTail: some View {
         VStack(spacing: 10) {
             HStack(spacing: 10) {
-                Circle()
-                    .fill(Theme.surface.opacity(0.85))
-                    .frame(width: 34, height: 34)
-                    .overlay(
-                        Image(systemName: "globe")
-                            .font(.system(size: 14, weight: .medium))
-                            .foregroundStyle(Theme.accent)
-                    )
-                    .accessibilityHidden(true)
+                BlipzSymbolTile(symbol: "globe.americas.fill", tint: Theme.accent, size: 34)
                 VStack(alignment: .leading, spacing: 1) {
                     Text("That's everyone so far.")
                         .font(.caption.weight(.medium))
@@ -324,11 +315,7 @@ struct RanksView: View {
             compactInviteLink(label: "Invite a friend")
         }
         .padding(12)
-        .background(Theme.surface.opacity(0.42), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .strokeBorder(Theme.hairline.opacity(0.18), lineWidth: 0.5)
-        )
+        .premiumSurface(.neutral, cornerRadius: 13, shadow: false)
         .padding(.horizontal, 18)
         .padding(.top, 12)
     }
@@ -352,29 +339,7 @@ struct RanksView: View {
             .foregroundStyle(.white)
             .frame(maxWidth: .infinity)
             .padding(.vertical, 9)
-            .background(Theme.accent, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-    }
-}
-
-private struct InitialsAvatar: View {
-    let name: String
-    var size: CGFloat = 36
-
-    var body: some View {
-        Circle()
-            .fill(Theme.accent.opacity(0.15))
-            .overlay(
-                Text(initial)
-                    .font(.system(size: size * 0.42, weight: .bold))
-                    .foregroundStyle(Theme.accent)
-            )
-            .frame(width: size, height: size)
-            .accessibilityHidden(true)
-    }
-
-    private var initial: String {
-        guard let first = name.trimmingCharacters(in: .whitespaces).first else { return "?" }
-        return String(first).uppercased()
+            .background(Theme.accentPressed, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
     }
 }
 
