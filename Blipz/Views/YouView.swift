@@ -90,15 +90,7 @@ struct YouView: View {
 
     private func identityRow(_ profile: UserProfile) -> some View {
         HStack(spacing: 12) {
-            Circle()
-                .fill(Theme.accent.opacity(0.15))
-                .frame(width: 48, height: 48)
-                .overlay(
-                    Text(initial(displayName(profile)))
-                        .font(.title3.weight(.bold))
-                        .foregroundStyle(Theme.accent)
-                )
-                .accessibilityHidden(true)
+            BlipzAvatar(name: displayName(profile), size: 46)
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(displayName(profile))
@@ -110,16 +102,11 @@ struct YouView: View {
             Spacer()
         }
         .padding(.horizontal, 18)
-        .padding(.bottom, 14)
+        .padding(.bottom, 12)
     }
 
     private func displayName(_ profile: UserProfile) -> String {
         profile.username ?? "guest_\(profile.id.prefix(8))"
-    }
-
-    private func initial(_ name: String) -> String {
-        guard let first = name.trimmingCharacters(in: .whitespaces).first else { return "?" }
-        return String(first).uppercased()
     }
 
     // MARK: - Stats
@@ -147,12 +134,7 @@ struct YouView: View {
                 }
             }
         }
-        .background(Theme.cardBackground, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .strokeBorder(Theme.hairline.opacity(0.22), lineWidth: 0.5)
-        )
-        .shadow(color: .black.opacity(0.04), radius: 7, y: 3)
+        .premiumSurface(.elevated, cornerRadius: 14)
         .padding(.horizontal, 18)
     }
 
@@ -262,8 +244,12 @@ struct YouView: View {
         let isToday = Calendar.current.isDateInToday(day.date)
         return VStack(spacing: 4) {
             RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .fill(isToday ? Theme.accent : Theme.surface)
+                .fill(isToday ? Theme.accentPressed : Theme.secondarySurface)
                 .frame(width: size, height: size)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        .strokeBorder(isToday ? Color.clear : Theme.hairline, lineWidth: 0.5)
+                )
                 .overlay(
                     // Dropped to a whole number here specifically — five tiles at this
                     // size stay legible without a decimal; the precise score is still
@@ -341,17 +327,14 @@ struct YouView: View {
             .padding(.horizontal, 12)
             .padding(.vertical, 11)
 
-            Divider().padding(.leading, 42)
+            Divider().padding(.leading, 52)
 
             Button {
                 Haptics.light()
                 showingOnboarding = true
             } label: {
                 HStack(spacing: 10) {
-                    Image(systemName: "questionmark.circle")
-                        .font(.system(size: 14))
-                        .frame(width: 20)
-                        .foregroundStyle(.secondary)
+                    BlipzSymbolTile(symbol: "questionmark", tint: Theme.accentPressed, size: 28)
                     Text("How Blipz works")
                         .foregroundStyle(.primary)
                     Spacer()
@@ -367,22 +350,14 @@ struct YouView: View {
             .buttonStyle(.plain)
             .accessibilityHint("Replays the intro screen")
         }
-        .background(Theme.cardBackground, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .strokeBorder(Theme.hairline.opacity(0.22), lineWidth: 0.5)
-        )
-        .shadow(color: .black.opacity(0.035), radius: 6, y: 2)
+        .premiumSurface(.elevated, cornerRadius: 14)
         .padding(.horizontal, 18)
         .padding(.bottom, 18)
     }
 
     private var reminderLabel: some View {
         HStack(spacing: 10) {
-            Image(systemName: "bell")
-                .font(.system(size: 14))
-                .frame(width: 20)
-                .foregroundStyle(.secondary)
+            BlipzSymbolTile(symbol: "bell.fill", tint: Theme.accentPressed, size: 28)
             Text("Daily reminder")
         }
         .font(.subheadline)
