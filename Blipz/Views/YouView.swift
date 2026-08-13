@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct YouView: View {
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @State private var viewModel = ProfileViewModel()
     @State private var history: [HistoryDay] = []
     @State private var showingOnboarding = false
@@ -15,8 +16,7 @@ struct YouView: View {
                         identityRow(profile)
                         statsRow(profile)
                         historySection
-                        reminderRow
-                        howBlipzWorksRow
+                        menuSection
                     } else if let error = viewModel.errorMessage {
                         Text(error)
                             .foregroundStyle(Theme.error)
@@ -58,17 +58,29 @@ struct YouView: View {
     // "Settings ›" is a static placeholder — there's no Settings screen in the app yet.
 
     private var titleRow: some View {
-        HStack {
-            Text("You")
-                .font(.system(size: 28, weight: .bold))
-            Spacer()
-            Text("Settings ›")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
+        Group {
+            if dynamicTypeSize.isAccessibilitySize {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("You")
+                        .font(.system(size: 30, weight: .bold))
+                    Text("Settings ›")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+            } else {
+                HStack {
+                    Text("You")
+                        .font(.system(size: 30, weight: .bold))
+                    Spacer()
+                    Text("Settings ›")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+            }
         }
         .padding(.horizontal, 18)
         .padding(.top, 14)
-        .padding(.bottom, 12)
+        .padding(.bottom, 16)
     }
 
     // MARK: - Identity
@@ -80,17 +92,17 @@ struct YouView: View {
         HStack(spacing: 14) {
             Circle()
                 .fill(Theme.accent.opacity(0.15))
-                .frame(width: 48, height: 48)
+                .frame(width: 56, height: 56)
                 .overlay(
                     Text(initial(displayName(profile)))
-                        .font(.title3.weight(.bold))
+                        .font(.title2.weight(.bold))
                         .foregroundStyle(Theme.accent)
                 )
                 .accessibilityHidden(true)
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(displayName(profile))
-                    .font(.title3.weight(.medium))
+                    .font(.title3.weight(.semibold))
                 Text("Pick a username ›")
                     .font(.caption)
                     .foregroundStyle(Theme.accent)
@@ -98,7 +110,7 @@ struct YouView: View {
             Spacer()
         }
         .padding(.horizontal, 18)
-        .padding(.bottom, 16)
+        .padding(.bottom, 20)
     }
 
     private func displayName(_ profile: UserProfile) -> String {
@@ -113,17 +125,34 @@ struct YouView: View {
     // MARK: - Stats
 
     private func statsRow(_ profile: UserProfile) -> some View {
-        VStack(spacing: 0) {
-            Divider()
-            HStack(spacing: 0) {
-                statTile(value: "\(profile.currentStreak)", label: "streak")
-                Divider().frame(height: 40)
-                statTile(value: "\(profile.longestStreak)", label: "best")
-                Divider().frame(height: 40)
-                statTile(value: profile.totalScore.formatted(.number.precision(.fractionLength(1))), label: "today")
+        Group {
+            if dynamicTypeSize.isAccessibilitySize {
+                VStack(spacing: 0) {
+                    statListRow(value: "\(profile.currentStreak)", label: "Day streak")
+                    Divider()
+                    statListRow(value: "\(profile.longestStreak)", label: "Best streak")
+                    Divider()
+                    statListRow(
+                        value: profile.totalScore.formatted(.number.precision(.fractionLength(1))),
+                        label: "Today"
+                    )
+                }
+            } else {
+                HStack(spacing: 0) {
+                    statTile(value: "\(profile.currentStreak)", label: "day streak")
+                    Divider().frame(height: 44)
+                    statTile(value: "\(profile.longestStreak)", label: "best streak")
+                    Divider().frame(height: 44)
+                    statTile(value: profile.totalScore.formatted(.number.precision(.fractionLength(1))), label: "today")
+                }
             }
-            Divider()
         }
+        .background(Theme.cardBackground, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .strokeBorder(Theme.hairline.opacity(0.7), lineWidth: 0.5)
+        )
+        .padding(.horizontal, 18)
     }
 
     private func statTile(value: String, label: String) -> some View {
@@ -135,7 +164,21 @@ struct YouView: View {
                 .foregroundStyle(.secondary)
         }
         .frame(maxWidth: .infinity)
-        .padding(.vertical, 14)
+        .padding(.vertical, 16)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(value) \(label)")
+    }
+
+    private func statListRow(value: String, label: String) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 12) {
+            Text(label)
+                .foregroundStyle(.secondary)
+            Spacer(minLength: 12)
+            Text(value)
+                .font(.blipzDisplay(size: 24, weight: .bold))
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(value) \(label)")
     }
@@ -156,21 +199,28 @@ struct YouView: View {
                     .foregroundStyle(Theme.accent)
             }
 
-            // GeometryReader computes a real per-tile width instead of relying on
-            // .aspectRatio(1, contentMode: .fit), which — even inside a flexible grid —
-            // was still resolving against an effectively-unbounded proposed height and
-            // collapsing to a tiny square. This guarantees true ~56pt tiles that also
-            // span the full content width, per the addendum's explicit spec.
-            GeometryReader { geo in
-                let spacing: CGFloat = 8
-                let tileSize = (geo.size.width - spacing * 4) / 5
-                HStack(spacing: spacing) {
-                    ForEach(last5Days, id: \.date) { day in
-                        historyTile(day, size: tileSize)
+            if dynamicTypeSize.isAccessibilitySize {
+                VStack(spacing: 0) {
+                    ForEach(Array(last5Days.enumerated()), id: \.element.date) { index, day in
+                        historyListRow(day)
+                        if index < last5Days.count - 1 {
+                            Divider()
+                        }
                     }
                 }
+            } else {
+                // GeometryReader guarantees equally sized tiles across the card.
+                GeometryReader { geo in
+                    let spacing: CGFloat = 8
+                    let tileSize = (geo.size.width - spacing * 4) / 5
+                    HStack(spacing: spacing) {
+                        ForEach(last5Days, id: \.date) { day in
+                            historyTile(day, size: tileSize)
+                        }
+                    }
+                }
+                .frame(height: 82)
             }
-            .frame(height: 82)
 
             // The scoring formula changed on 2026-08-06 (see backend app/scoring.py) —
             // a tile from before that date is on the old unweighted /35 scale, not
@@ -183,9 +233,15 @@ struct YouView: View {
                     .foregroundStyle(.secondary)
             }
         }
+        .padding(16)
+        .background(Theme.cardBackground, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .strokeBorder(Theme.hairline.opacity(0.7), lineWidth: 0.5)
+        )
         .padding(.horizontal, 18)
-        .padding(.top, 20)
-        .padding(.bottom, 20)
+        .padding(.top, 18)
+        .padding(.bottom, 18)
     }
 
     private var last5Days: [(date: Date, label: String, score: Double?, isLegacyScoring: Bool)] {
@@ -239,38 +295,65 @@ struct YouView: View {
         )
     }
 
+    private func historyListRow(_ day: (date: Date, label: String, score: Double?, isLegacyScoring: Bool)) -> some View {
+        let score = day.score.map {
+            $0.formatted(.number.precision(.fractionLength(1)))
+                + (day.isLegacyScoring ? "†" : "")
+        } ?? "—"
+
+        return HStack(alignment: .firstTextBaseline, spacing: 12) {
+            Text(day.label)
+                .foregroundStyle(.secondary)
+            Spacer(minLength: 12)
+            Text(score)
+                .font(.blipzDisplay(size: 20, weight: .semibold))
+                .foregroundStyle(Calendar.current.isDateInToday(day.date) ? Theme.accent : .primary)
+        }
+        .padding(.vertical, 10)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(
+            "\(day.label), "
+                + (day.score.map {
+                    $0.formatted(.number.precision(.fractionLength(1)))
+                        + (day.isLegacyScoring ? " out of 35, old scoring, not directly comparable" : " out of 100")
+                } ?? "no score")
+        )
+    }
+
     // MARK: - Reminder
     //
     // Static placeholder — there's no local-notification system in the app yet.
 
-    private var reminderRow: some View {
+    // MARK: - Menu
+
+    private var menuSection: some View {
         VStack(spacing: 0) {
-            Divider()
-            HStack {
-                Text("Daily reminder")
-                Spacer()
-                Text("off ›")
-                    .foregroundStyle(.secondary)
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: 12) {
+                    reminderLabel
+                    Spacer()
+                    reminderStatus
+                }
+
+                VStack(alignment: .leading, spacing: 8) {
+                    reminderLabel
+                    reminderStatus
+                        .frame(maxWidth: .infinity, alignment: .trailing)
+                }
             }
+            .padding(.horizontal, 14)
             .padding(.vertical, 14)
-            Divider()
-        }
-        .padding(.horizontal, 18)
-    }
 
-    // MARK: - Replay onboarding
-    //
-    // Same content shown on first launch, just presented on demand — doesn't touch
-    // hasCompletedOnboarding, so it has no effect on future launches.
+            Divider().padding(.leading, 48)
 
-    private var howBlipzWorksRow: some View {
-        VStack(spacing: 0) {
-            Divider()
             Button {
                 Haptics.light()
                 showingOnboarding = true
             } label: {
-                HStack {
+                HStack(spacing: 12) {
+                    Image(systemName: "questionmark.circle")
+                        .frame(width: 22)
+                        .foregroundStyle(.secondary)
                     Text("How Blipz works")
                         .foregroundStyle(.primary)
                     Spacer()
@@ -278,14 +361,39 @@ struct YouView: View {
                         .font(.caption.weight(.semibold))
                         .foregroundStyle(Color(.tertiaryLabel))
                 }
+                .padding(.horizontal, 14)
                 .padding(.vertical, 14)
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
             .accessibilityHint("Replays the intro screen")
-            Divider()
         }
+        .background(Theme.cardBackground, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .strokeBorder(Theme.hairline.opacity(0.7), lineWidth: 0.5)
+        )
         .padding(.horizontal, 18)
+        .padding(.bottom, 24)
+    }
+
+    private var reminderLabel: some View {
+        HStack(spacing: 12) {
+            Image(systemName: "bell")
+                .frame(width: 22)
+                .foregroundStyle(.secondary)
+            Text("Daily reminder")
+        }
+    }
+
+    private var reminderStatus: some View {
+        HStack(spacing: 8) {
+            Text("Off")
+                .foregroundStyle(.secondary)
+            Image(systemName: "chevron.right")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(Color(.tertiaryLabel))
+        }
     }
 }
 
