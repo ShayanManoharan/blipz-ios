@@ -65,6 +65,7 @@ struct RanksView: View {
     private var ranksTitle: some View {
         Text("Ranks")
             .font(.system(size: 28, weight: .bold))
+            .foregroundStyle(Theme.accentPressed)
     }
 
     private var addFriendButton: some View {
@@ -85,29 +86,31 @@ struct RanksView: View {
         .accessibilityHint("Switches to the Friends tab")
     }
 
-    // Underlined text tabs, not a filled iOS segmented control.
     private var segmentTabs: some View {
-        HStack(spacing: 18) {
+        HStack(spacing: 0) {
             ForEach(Scope.allCases, id: \.self) { s in
                 Button {
                     scope = s
                 } label: {
-                    VStack(spacing: 6) {
-                        Text(s.rawValue)
-                            .font(.subheadline.weight(scope == s ? .semibold : .regular))
-                            .foregroundStyle(scope == s ? .primary : .secondary)
-                        Rectangle()
-                            .fill(scope == s ? Theme.accent : .clear)
-                            .frame(height: 1.5)
-                    }
+                    Text(s.rawValue)
+                        .font(.subheadline.weight(scope == s ? .semibold : .regular))
+                        .foregroundStyle(scope == s ? Color.white : Color.secondary)
                     .frame(maxWidth: .infinity)
+                    .padding(.vertical, 8)
+                    .background(
+                        scope == s ? Theme.accentPressed : Color.clear,
+                        in: RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    )
                 }
                 .buttonStyle(.plain)
                 .accessibilityAddTraits(scope == s ? .isSelected : [])
             }
         }
+        .padding(3)
+        .background(Theme.cardBackground.opacity(0.70), in: RoundedRectangle(cornerRadius: 15, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 15).strokeBorder(Theme.hairline, lineWidth: 0.5))
         .padding(.horizontal, 18)
-        .padding(.bottom, 6)
+        .padding(.bottom, 4)
     }
 
     // MARK: - Add-by-username (Friends segment only, always at the top)
@@ -179,7 +182,7 @@ struct RanksView: View {
                     }
                 }
             }
-            .premiumSurface(.elevated, cornerRadius: 14)
+            .premiumSurface(.elevated, cornerRadius: 16)
             .padding(.horizontal, 18)
             .padding(.top, 8)
 
@@ -289,33 +292,60 @@ struct RanksView: View {
             .padding(.horizontal, 18)
             .padding(.top, 12)
         } else {
-            Text("No scores yet today")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-                .frame(maxWidth: .infinity)
-                .padding(.top, 40)
+            VStack(spacing: 12) {
+                ZStack {
+                    Circle()
+                        .fill(Theme.accentSurface)
+                        .frame(width: 72, height: 72)
+                    Image(systemName: "globe.americas.fill")
+                        .font(.system(size: 32, weight: .medium))
+                        .foregroundStyle(Theme.accentPressed)
+                }
+
+                VStack(spacing: 2) {
+                    Text("No scores yet today")
+                        .font(.subheadline.weight(.semibold))
+                    Text("Be the first on today's board.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                .multilineTextAlignment(.center)
+
+                compactInviteLink(label: "Invite a friend")
+            }
+            .frame(maxWidth: .infinity)
+            .padding(14)
+            .premiumSurface(.neutral, cornerRadius: 16, shadow: false)
+            .padding(.horizontal, 18)
+            .padding(.top, 12)
         }
     }
 
     private var globalTail: some View {
-        VStack(spacing: 10) {
-            HStack(spacing: 10) {
-                BlipzSymbolTile(symbol: "globe.americas.fill", tint: Theme.accent, size: 34)
-                VStack(alignment: .leading, spacing: 1) {
-                    Text("That's everyone so far.")
-                        .font(.caption.weight(.medium))
-                        .foregroundStyle(.secondary)
-                    Text("The board fills up through the day.")
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                }
-                Spacer(minLength: 0)
+        VStack(spacing: 12) {
+            ZStack {
+                Circle()
+                    .fill(Theme.accentSurface)
+                    .frame(width: 72, height: 72)
+                Image(systemName: "globe.americas.fill")
+                    .font(.system(size: 32, weight: .medium))
+                    .foregroundStyle(Theme.accentPressed)
             }
+
+            VStack(spacing: 2) {
+                Text("That's everyone so far.")
+                    .font(.subheadline.weight(.semibold))
+                Text("The board fills up through the day.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            .multilineTextAlignment(.center)
 
             compactInviteLink(label: "Invite a friend")
         }
-        .padding(12)
-        .premiumSurface(.neutral, cornerRadius: 13, shadow: false)
+        .frame(maxWidth: .infinity)
+        .padding(14)
+        .premiumSurface(.neutral, cornerRadius: 16, shadow: false)
         .padding(.horizontal, 18)
         .padding(.top, 12)
     }
