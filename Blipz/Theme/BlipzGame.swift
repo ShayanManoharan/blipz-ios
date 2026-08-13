@@ -39,9 +39,9 @@ struct BlipzGameEmblem: View {
             .overlay(symbol)
             .overlay(
                 RoundedRectangle(cornerRadius: size * 0.26, style: .continuous)
-                    .strokeBorder(tint.opacity(0.10), lineWidth: 0.5)
+                    .strokeBorder(tint.opacity(0.12), lineWidth: 0.5)
             )
-            .shadow(color: tint.opacity(0.08), radius: 4, y: 2)
+            .shadow(color: tint.opacity(0.07), radius: 5, y: 2)
             .accessibilityHidden(true)
     }
 

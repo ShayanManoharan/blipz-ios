@@ -3,36 +3,36 @@ import SwiftUI
 enum Theme {
     static let accent = Color.accentColor
 
-    // Direction A uses a near-white canvas. The warmth is intentionally slight: it
-    // separates elevated white surfaces without making the interface look beige.
+    // A quiet ivory canvas gives white content surfaces visible separation while
+    // staying light enough to read as an Apple-adjacent neutral rather than beige.
     static let background = Color(uiColor: UIColor { trait in
         trait.userInterfaceStyle == .dark
             ? UIColor(red: 0.07, green: 0.07, blue: 0.09, alpha: 1)
-            : UIColor(red: 0.985, green: 0.982, blue: 0.975, alpha: 1)
+            : UIColor(red: 0.985, green: 0.974, blue: 0.950, alpha: 1)
     })
 
     static let cardBackground = Color(uiColor: UIColor { trait in
         trait.userInterfaceStyle == .dark
             ? UIColor(red: 0.15, green: 0.15, blue: 0.18, alpha: 1)
-            : UIColor.white
+            : UIColor(red: 1.0, green: 0.998, blue: 0.992, alpha: 1)
     })
 
     static let secondarySurface = Color(uiColor: UIColor { trait in
         trait.userInterfaceStyle == .dark
             ? UIColor(red: 0.12, green: 0.12, blue: 0.145, alpha: 1)
-            : UIColor(red: 0.965, green: 0.958, blue: 0.945, alpha: 1)
+            : UIColor(red: 0.966, green: 0.956, blue: 0.934, alpha: 1)
     })
 
     static let accentSurface = Color(uiColor: UIColor { trait in
         trait.userInterfaceStyle == .dark
             ? UIColor(red: 0.04, green: 0.20, blue: 0.14, alpha: 1)
-            : UIColor(red: 0.91, green: 0.965, blue: 0.935, alpha: 1)
+            : UIColor(red: 0.918, green: 0.963, blue: 0.935, alpha: 1)
     })
 
     static let progressSurface = Color(uiColor: UIColor { trait in
         trait.userInterfaceStyle == .dark
             ? UIColor(red: 0.055, green: 0.18, blue: 0.13, alpha: 1)
-            : UIColor(red: 0.93, green: 0.97, blue: 0.945, alpha: 1)
+            : UIColor(red: 0.934, green: 0.967, blue: 0.942, alpha: 1)
     })
 
     static let avatarSurface = Color(uiColor: UIColor { trait in
@@ -44,7 +44,7 @@ enum Theme {
     static let symbolSurface = Color(uiColor: UIColor { trait in
         trait.userInterfaceStyle == .dark
             ? UIColor(red: 0.18, green: 0.18, blue: 0.21, alpha: 1)
-            : UIColor(red: 0.95, green: 0.945, blue: 0.93, alpha: 1)
+            : UIColor(red: 0.962, green: 0.953, blue: 0.933, alpha: 1)
     })
 
     static let guessSurface = Color(uiColor: UIColor { trait in
@@ -146,9 +146,9 @@ private struct PremiumSurfaceModifier: ViewModifier {
                     .strokeBorder(Theme.hairline, lineWidth: 0.5)
             )
             .shadow(
-                color: shadow ? Color.black.opacity(0.055) : .clear,
-                radius: shadow ? 10 : 0,
-                y: shadow ? 4 : 0
+                color: shadow ? Color.black.opacity(0.045) : .clear,
+                radius: shadow ? 12 : 0,
+                y: shadow ? 5 : 0
             )
     }
 }
