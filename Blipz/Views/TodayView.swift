@@ -180,6 +180,7 @@ struct TodayView: View {
             Text("BLIPZ")
                 .font(.blipzDisplay(size: 16, weight: .bold))
                 .tracking(16 * 0.14)
+                .foregroundStyle(Theme.accentPressed)
             Spacer()
             HStack(spacing: 4) {
                 Image(systemName: "flame.fill")
@@ -190,7 +191,9 @@ struct TodayView: View {
             }
             .padding(.horizontal, 9)
             .padding(.vertical, 6)
-            .background(Theme.surface.opacity(0.8), in: Capsule())
+            .background(Theme.cardBackground, in: Capsule())
+            .overlay(Capsule().strokeBorder(Theme.hairline, lineWidth: 0.5))
+            .shadow(color: .black.opacity(0.035), radius: 5, y: 2)
             .accessibilityElement(children: .combine)
             .accessibilityLabel("\(profile.currentStreak) day streak")
         }
@@ -203,7 +206,7 @@ struct TodayView: View {
 
     @ViewBuilder
     private func content(_ profile: UserProfile) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 11) {
             dailyHeader(profile)
             gameList(profile)
 
@@ -246,7 +249,7 @@ struct TodayView: View {
                 }
             }
         }
-        .premiumSurface(.elevated, cornerRadius: 14)
+        .premiumSurface(.elevated, cornerRadius: 16)
     }
 
     private func compactGameRow(_ game: BlipzGame, profile: UserProfile) -> some View {
@@ -262,9 +265,9 @@ struct TodayView: View {
                 }
             }
             .padding(.horizontal, 12)
-            .padding(.vertical, 7)
+            .padding(.vertical, 8)
             .background(
-                isCompleted(game, profile) ? Theme.accentSurface.opacity(0.30) : Color.clear
+                isCompleted(game, profile) ? Theme.accentSurface.opacity(0.24) : Color.clear
             )
             .contentShape(Rectangle())
         }
@@ -358,7 +361,7 @@ struct TodayView: View {
     }
 
     private func gameEmblem(_ game: BlipzGame) -> some View {
-        BlipzGameEmblem(game: game, size: 36)
+        BlipzGameEmblem(game: game, size: 38)
     }
 
     private func completedSubtitle(_ game: BlipzGame, profile: UserProfile) -> String {
@@ -421,6 +424,7 @@ struct TodayView: View {
             RoundedRectangle(cornerRadius: 14, style: .continuous)
                 .strokeBorder(Theme.accent.opacity(0.08), lineWidth: 0.5)
         )
+        .shadow(color: Theme.accent.opacity(0.055), radius: 9, y: 4)
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(done) of 3 games complete. Today's score \(profile.totalScore, specifier: "%.1f") out of 100")
     }
@@ -439,13 +443,17 @@ struct TodayView: View {
         NavigationLink {
             destination(for: game)
         } label: {
-            Text("\(continuing ? "Continue" : "Play"): \(title(game))")
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(.white)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 10)
-                .background(Theme.accentPressed, in: RoundedRectangle(cornerRadius: 11, style: .continuous))
-                .shadow(color: Theme.accent.opacity(0.10), radius: 5, y: 2)
+            HStack(spacing: 8) {
+                Image(systemName: "bolt.fill")
+                    .font(.system(size: 12, weight: .semibold))
+                Text("\(continuing ? "Continue" : "Play"): \(title(game))")
+                    .font(.subheadline.weight(.semibold))
+            }
+            .foregroundStyle(.white)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 10)
+            .background(Theme.accentPressed, in: RoundedRectangle(cornerRadius: 11, style: .continuous))
+            .shadow(color: Theme.accent.opacity(0.12), radius: 7, y: 3)
         }
         .buttonStyle(.plain)
         .simultaneousGesture(TapGesture().onEnded { Haptics.light() })
@@ -658,7 +666,7 @@ struct TodayView: View {
             TabRouter.shared.selected = .ranks
         } label: {
             HStack(spacing: 8) {
-                BlipzSymbolTile(symbol: "list.number", tint: Theme.accent, size: 26)
+                BlipzSymbolTile(symbol: "trophy.fill", tint: Theme.accentPressed, size: 26)
                 Text("Today's board")
                     .font(.system(size: 13, weight: .medium))
                     .foregroundStyle(.primary)
@@ -678,7 +686,9 @@ struct TodayView: View {
         }
         .buttonStyle(.plain)
         .padding(.horizontal, 10)
-        .background(Theme.secondarySurface.opacity(0.72), in: RoundedRectangle(cornerRadius: 11, style: .continuous))
+        .background(Theme.cardBackground.opacity(0.88), in: RoundedRectangle(cornerRadius: 11, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 11).strokeBorder(Theme.hairline, lineWidth: 0.5))
+        .shadow(color: .black.opacity(0.025), radius: 5, y: 2)
         .accessibilityLabel(playersToday.map { "Today's board, \($0) played today" } ?? "Today's board")
         .accessibilityHint("Opens Ranks")
     }
