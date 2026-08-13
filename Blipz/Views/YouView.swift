@@ -63,6 +63,7 @@ struct YouView: View {
                 VStack(alignment: .leading, spacing: 6) {
                     Text("You")
                         .font(.system(size: 28, weight: .bold))
+                        .foregroundStyle(Theme.accentPressed)
                     Text("Settings ›")
                         .font(.caption)
                         .foregroundStyle(.secondary)
@@ -71,6 +72,7 @@ struct YouView: View {
                 HStack {
                     Text("You")
                         .font(.system(size: 28, weight: .bold))
+                        .foregroundStyle(Theme.accentPressed)
                     Spacer()
                     Text("Settings ›")
                         .font(.caption)
@@ -90,7 +92,7 @@ struct YouView: View {
 
     private func identityRow(_ profile: UserProfile) -> some View {
         HStack(spacing: 12) {
-            BlipzAvatar(name: displayName(profile), size: 46)
+            BlipzAvatar(name: displayName(profile), size: 48)
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(displayName(profile))
@@ -102,7 +104,8 @@ struct YouView: View {
             Spacer()
         }
         .padding(.horizontal, 18)
-        .padding(.bottom, 12)
+        .padding(.top, 2)
+        .padding(.bottom, 14)
     }
 
     private func displayName(_ profile: UserProfile) -> String {
@@ -134,7 +137,7 @@ struct YouView: View {
                 }
             }
         }
-        .premiumSurface(.elevated, cornerRadius: 14)
+        .premiumSurface(.elevated, cornerRadius: 16)
         .padding(.horizontal, 18)
     }
 
@@ -219,8 +222,8 @@ struct YouView: View {
             }
         }
         .padding(.horizontal, 18)
-        .padding(.top, 14)
-        .padding(.bottom, 16)
+        .padding(.top, 16)
+        .padding(.bottom, 18)
     }
 
     private var last5Days: [(date: Date, label: String, score: Double?, isLegacyScoring: Bool)] {
@@ -350,7 +353,7 @@ struct YouView: View {
             .buttonStyle(.plain)
             .accessibilityHint("Replays the intro screen")
         }
-        .premiumSurface(.elevated, cornerRadius: 14)
+        .premiumSurface(.elevated, cornerRadius: 16)
         .padding(.horizontal, 18)
         .padding(.bottom, 18)
     }
