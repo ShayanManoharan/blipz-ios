@@ -34,9 +34,15 @@ struct YouView: View {
             }
             .screenBackground()
             .toolbar(.hidden, for: .navigationBar)
-            .task {
+            .refreshable {
                 await viewModel.loadProfile()
                 await loadHistory()
+            }
+            .onAppear {
+                Task {
+                    await viewModel.loadProfile()
+                    await loadHistory()
+                }
             }
             .sheet(isPresented: $showingOnboarding) {
                 OnboardingView { showingOnboarding = false }
@@ -54,58 +60,51 @@ struct YouView: View {
     }
 
     // MARK: - Title
-    //
-    // "Settings ›" is a static placeholder — there's no Settings screen in the app yet.
 
     private var titleRow: some View {
         Group {
             if dynamicTypeSize.isAccessibilitySize {
                 VStack(alignment: .leading, spacing: 6) {
                     Text("You")
-                        .font(.system(size: 28, weight: .bold))
-                        .foregroundStyle(Theme.accentPressed)
-                    Text("Settings ›")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                        .font(.largeTitle.weight(.bold))
+                        .foregroundStyle(Theme.brandInk)
+                    Text("DAILY BLIP").font(.caption2).foregroundStyle(.secondary)
                 }
             } else {
                 HStack {
                     Text("You")
-                        .font(.system(size: 28, weight: .bold))
-                        .foregroundStyle(Theme.accentPressed)
+                        .font(.largeTitle.weight(.bold))
+                        .foregroundStyle(Theme.brandInk)
                     Spacer()
-                    Text("Settings ›")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                    Text("DAILY BLIP").font(.caption2).foregroundStyle(.secondary)
                 }
             }
         }
         .padding(.horizontal, 18)
         .padding(.top, 10)
-        .padding(.bottom, 10)
+        .padding(.bottom, 24)
+        .accessibilityAddTraits(.isHeader)
     }
 
     // MARK: - Identity
-    //
-    // "Pick a username ›" is a static placeholder — there's no username-setting
-    // endpoint yet, so it can't actually do anything if tapped.
 
     private func identityRow(_ profile: UserProfile) -> some View {
-        HStack(spacing: 12) {
-            BlipzAvatar(name: displayName(profile), size: 48)
-
-            VStack(alignment: .leading, spacing: 2) {
-                Text(displayName(profile))
-                    .font(.headline)
-                Text("Pick a username ›")
-                    .font(.caption)
-                    .foregroundStyle(Theme.accent)
+        VStack(alignment: .leading, spacing: 20) {
+            Text("A little more you.").font(.headline).foregroundStyle(Theme.brandInk)
+            HStack(spacing: 14) {
+                BlipzAvatar(name: displayName(profile), size: 64)
+                VStack(alignment: .leading, spacing: 5) {
+                    Text(displayName(profile)).font(.headline)
+                        .fixedSize(horizontal: false, vertical: true)
+                    Text("Your daily corner of Blipz.")
+                        .font(.caption).foregroundStyle(Theme.accent)
+                }
+                Spacer(minLength: 0)
             }
-            Spacer()
         }
         .padding(.horizontal, 18)
         .padding(.top, 2)
-        .padding(.bottom, 14)
+        .padding(.bottom, 22)
     }
 
     private func displayName(_ profile: UserProfile) -> String {
@@ -129,11 +128,11 @@ struct YouView: View {
                 }
             } else {
                 HStack(spacing: 0) {
-                    statTile(value: "\(profile.currentStreak)", label: "day streak")
+                    statTile(value: "\(profile.currentStreak)", label: "Day streak", symbol: "flame", tint: Theme.streak)
                     Divider().frame(height: 44)
-                    statTile(value: "\(profile.longestStreak)", label: "best streak")
+                    statTile(value: "\(profile.longestStreak)", label: "Best streak", symbol: "sparkles", tint: Theme.accent)
                     Divider().frame(height: 44)
-                    statTile(value: profile.totalScore.formatted(.number.precision(.fractionLength(1))), label: "today")
+                    statTile(value: profile.totalScore.formatted(.number.precision(.fractionLength(0...1))), label: "Today’s score", symbol: "bolt", tint: Theme.mathsAccent)
                 }
             }
         }
@@ -141,16 +140,17 @@ struct YouView: View {
         .padding(.horizontal, 18)
     }
 
-    private func statTile(value: String, label: String) -> some View {
-        VStack(spacing: 3) {
+    private func statTile(value: String, label: String, symbol: String, tint: Color) -> some View {
+        VStack(spacing: 7) {
+            Image(systemName: symbol).font(.title3).foregroundStyle(tint).accessibilityHidden(true)
             Text(value)
-                .font(.blipzDisplay(size: 21, weight: .bold))
+                .font(.blipzDisplay(size: 25, weight: .bold)).foregroundStyle(Theme.brandInk)
             Text(label)
                 .font(.caption2)
                 .foregroundStyle(.secondary)
         }
         .frame(maxWidth: .infinity)
-        .padding(.vertical, 12)
+        .padding(.vertical, 16)
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(value) \(label)")
     }
@@ -170,19 +170,13 @@ struct YouView: View {
     }
 
     // MARK: - Last 5 days
-    //
-    // "All history ›" is a static placeholder — there's no full-history screen yet.
 
     private var historySection: some View {
         VStack(alignment: .leading, spacing: 9) {
             HStack {
-                Text("Last 5 days")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                Text("Last 5 days").font(.subheadline.weight(.semibold)).foregroundStyle(Theme.brandInk)
                 Spacer()
-                Text("All history ›")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(Theme.accent)
+                Text("YOUR RECENT BLIPS").font(.caption2).foregroundStyle(.secondary)
             }
 
             if dynamicTypeSize.isAccessibilitySize {
@@ -197,7 +191,7 @@ struct YouView: View {
             } else {
                 // GeometryReader guarantees equally sized tiles across the card.
                 GeometryReader { geo in
-                    let tileSize = min(50, (geo.size.width - 28) / 5)
+                    let tileSize = min(58, (geo.size.width - 28) / 5)
                     HStack(spacing: 0) {
                         ForEach(last5Days, id: \.date) { day in
                             historyTile(day, size: tileSize)
@@ -207,7 +201,7 @@ struct YouView: View {
                         }
                     }
                 }
-                .frame(height: 68)
+                .frame(height: 82)
             }
 
             // The scoring formula changed on 2026-08-06 (see backend app/scoring.py) —
@@ -220,14 +214,16 @@ struct YouView: View {
                     .font(.caption2)
                     .foregroundStyle(.secondary)
             }
+            Text("A little curiosity, one day at a time.")
+                .font(.caption).foregroundStyle(.secondary)
         }
         .padding(.horizontal, 18)
-        .padding(.top, 16)
-        .padding(.bottom, 18)
+        .padding(.top, 24)
+        .padding(.bottom, 24)
     }
 
     private var last5Days: [(date: Date, label: String, score: Double?, isLegacyScoring: Bool)] {
-        let calendar = Calendar.current
+        let calendar = BlipzDay.calendar
         return (0..<5).reversed().map { offset in
             let day = calendar.date(byAdding: .day, value: -offset, to: .now) ?? .now
             let key = isoDateString(day)
@@ -237,17 +233,14 @@ struct YouView: View {
     }
 
     private func isoDateString(_ date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd"
-        formatter.timeZone = .current
-        return formatter.string(from: date)
+        BlipzDay.key(for: date)
     }
 
     private func historyTile(_ day: (date: Date, label: String, score: Double?, isLegacyScoring: Bool), size: CGFloat) -> some View {
-        let isToday = Calendar.current.isDateInToday(day.date)
+        let isToday = BlipzDay.calendar.isDateInToday(day.date)
         return VStack(spacing: 4) {
             RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .fill(isToday ? Theme.accentPressed : Theme.secondarySurface)
+                .fill(isToday ? Theme.buttonFill : Theme.secondarySurface)
                 .frame(width: size, height: size)
                 .overlay(
                     RoundedRectangle(cornerRadius: 10, style: .continuous)
@@ -267,8 +260,8 @@ struct YouView: View {
                     }
                     .foregroundStyle(isToday ? .white : (day.score == nil ? .secondary : .primary))
                 )
-            Text(day.label)
-                .font(.system(size: 11))
+            Text(isToday ? "Today" : day.label)
+                .font(.caption2)
                 .foregroundStyle(.secondary)
         }
         .accessibilityElement(children: .combine)
@@ -293,7 +286,7 @@ struct YouView: View {
             Spacer(minLength: 12)
             Text(score)
                 .font(.blipzDisplay(size: 20, weight: .semibold))
-                .foregroundStyle(Calendar.current.isDateInToday(day.date) ? Theme.accent : .primary)
+                .foregroundStyle(BlipzDay.calendar.isDateInToday(day.date) ? Theme.accent : .primary)
         }
         .padding(.vertical, 10)
         .accessibilityElement(children: .combine)
@@ -308,7 +301,7 @@ struct YouView: View {
 
     // MARK: - Reminder
     //
-    // Static placeholder — there's no local-notification system in the app yet.
+    // No notification system exists yet: render an honest passive status, not a toggle.
 
     // MARK: - Menu
 
@@ -352,6 +345,19 @@ struct YouView: View {
             }
             .buttonStyle(.plain)
             .accessibilityHint("Replays the intro screen")
+
+            Divider().padding(.leading, 52)
+
+            ShareLink(item: profileInviteText) {
+                HStack(spacing: 10) {
+                    BlipzSymbolTile(symbol: "person.badge.plus", tint: Theme.accent, size: 28)
+                    Text("Invite a friend").foregroundStyle(.primary)
+                    Spacer()
+                    Image(systemName: "square.and.arrow.up").foregroundStyle(Theme.accent)
+                }
+                .font(.subheadline).padding(.horizontal, 12).padding(.vertical, 13)
+                .frame(minHeight: 48)
+            }.buttonStyle(.plain)
         }
         .premiumSurface(.elevated, cornerRadius: 16)
         .padding(.horizontal, 18)
@@ -368,12 +374,15 @@ struct YouView: View {
 
     private var reminderStatus: some View {
         HStack(spacing: 8) {
-            Text("Off")
+            Text("Not available yet")
+                .font(.caption)
                 .foregroundStyle(.secondary)
-            Image(systemName: "chevron.right")
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(Color(.tertiaryLabel))
         }
+    }
+
+    private var profileInviteText: String {
+        viewModel.profile?.username.map { "Play Blipz with me — add me as a friend: \($0)" }
+            ?? "Play Blipz with me — three quick daily games, one combined score."
     }
 }
 
