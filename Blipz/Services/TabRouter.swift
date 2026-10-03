@@ -12,5 +12,6 @@ enum AppTab {
 final class TabRouter {
     static let shared = TabRouter()
     var selected: AppTab = .today
+    var todayPath: [BlipzGame] = []
     private init() {}
 }
