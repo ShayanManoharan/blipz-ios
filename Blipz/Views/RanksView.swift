@@ -17,27 +17,31 @@ struct RanksView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 0) {
                     titleRow
+                    boardIntroduction
                     segmentTabs
                     if scope == .friends {
                         addFriendField
                     }
 
+                    currentUserState
                     content
                 }
             }
             .screenBackground()
             .toolbar(.hidden, for: .navigationBar)
-            .task {
-                await viewModel.loadGlobal()
-                await profileViewModel.loadProfile()
-            }
+            .onAppear { Task { await refresh() } }
+            .refreshable { await refresh() }
             .onChange(of: scope) { _, newScope in
                 Haptics.light()
-                if newScope == .friends, viewModel.friendsEntries.isEmpty {
-                    Task { await viewModel.loadFriends() }
-                }
+                Task { await refresh() }
             }
         }
+    }
+
+    private func refresh() async {
+        await profileViewModel.loadProfile()
+        if scope == .global { await viewModel.loadGlobal() }
+        else { await viewModel.loadFriends() }
     }
 
     // MARK: - Title + segments
@@ -47,25 +51,61 @@ struct RanksView: View {
             if dynamicTypeSize.isAccessibilitySize {
                 VStack(alignment: .leading, spacing: 10) {
                     ranksTitle
-                    addFriendButton
+                    Text("DAILY BLIP").font(.caption2).foregroundStyle(.secondary)
                 }
             } else {
                 HStack {
                     ranksTitle
                     Spacer()
-                    addFriendButton
+                    Text("DAILY BLIP").font(.caption2).foregroundStyle(.secondary)
                 }
             }
         }
         .padding(.horizontal, 18)
         .padding(.top, 10)
-        .padding(.bottom, 8)
+        .padding(.bottom, 22)
     }
 
     private var ranksTitle: some View {
         Text("Ranks")
-            .font(.system(size: 28, weight: .bold))
-            .foregroundStyle(Theme.accentPressed)
+            .font(.largeTitle.weight(.bold))
+            .foregroundStyle(Theme.brandInk)
+            .accessibilityAddTraits(.isHeader)
+    }
+
+    private var boardIntroduction: some View {
+        VStack(alignment: .leading, spacing: 5) {
+            HStack {
+                Text("TODAY’S BOARD").font(.caption2.weight(.semibold)).foregroundStyle(.secondary)
+                Spacer()
+                addFriendButton
+            }
+            Text("A shared little challenge.").font(.headline).foregroundStyle(Theme.brandInk)
+            Text("Different ways of thinking. The same daily Blip.")
+                .font(.caption).foregroundStyle(.secondary)
+        }.padding(.horizontal, 20).padding(.bottom, 16)
+    }
+
+    @ViewBuilder
+    private var currentUserState: some View {
+        if let profile = profileViewModel.profile {
+            let complete = BlipzGame.orderedDaily.allSatisfy { profile.isCompleted($0) }
+            HStack(alignment: .center, spacing: 12) {
+                Image(systemName: complete ? "checkmark.seal" : "globe.americas")
+                    .font(.title2).foregroundStyle(Theme.accent).accessibilityHidden(true)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(complete ? "Your daily score is in." : "Your place is waiting.")
+                        .font(.subheadline.weight(.semibold)).foregroundStyle(Theme.brandInk)
+                    Text(complete
+                        ? "\(profile.totalScore.formatted()) / 100 · A little play went a long way."
+                        : "Finish today’s games to complete your daily score.")
+                        .font(.caption).foregroundStyle(.secondary)
+                }
+                Spacer(minLength: 0)
+            }
+            .padding(14).premiumSurface(.accent, cornerRadius: 16, shadow: false)
+            .padding(.horizontal, 18).padding(.top, 10).padding(.bottom, 6)
+        }
     }
 
     private var addFriendButton: some View {
@@ -82,6 +122,7 @@ struct RanksView: View {
             }
             .font(.caption.weight(.semibold))
             .foregroundStyle(Theme.accentPressed)
+            .frame(minHeight: 44)
         }
         .accessibilityHint("Switches to the Friends tab")
     }
@@ -96,9 +137,9 @@ struct RanksView: View {
                         .font(.subheadline.weight(scope == s ? .semibold : .regular))
                         .foregroundStyle(scope == s ? Color.white : Color.secondary)
                     .frame(maxWidth: .infinity)
-                    .padding(.vertical, 8)
+                    .frame(minHeight: 44)
                     .background(
-                        scope == s ? Theme.accentPressed : Color.clear,
+                        scope == s ? Theme.buttonFill : Color.clear,
                         in: RoundedRectangle(cornerRadius: 12, style: .continuous)
                     )
                 }
@@ -136,7 +177,7 @@ struct RanksView: View {
                     }
                 }
                 .buttonStyle(.borderedProminent)
-                .tint(Theme.accent)
+                .tint(Theme.buttonFill)
                 .disabled(addViewModel.usernameToAdd.isEmpty)
             }
 
@@ -175,6 +216,15 @@ struct RanksView: View {
             emptyState
         } else {
             VStack(spacing: 0) {
+                HStack {
+                    Text("#").frame(width: 28)
+                    Text("PLAYER")
+                    Spacer()
+                    Text("DAILY SCORE")
+                }.font(.caption2.weight(.medium)).foregroundStyle(.secondary)
+                    .padding(.horizontal, 14).padding(.vertical, 12)
+                    .accessibilityHidden(true)
+                Divider()
                 ForEach(entries) { entry in
                     rankRow(entry)
                     if entry.id != entries.last?.id {
@@ -224,7 +274,7 @@ struct RanksView: View {
             }
         }
         .padding(.horizontal, 12)
-        .padding(.vertical, 8)
+        .padding(.vertical, 14)
         .background(mine ? Theme.accentSurface : Color.clear)
         .accessibilityElement(children: .combine)
         .accessibilityLabel(
@@ -235,16 +285,23 @@ struct RanksView: View {
 
     private func rankIdentity(_ entry: LeaderboardEntry, mine: Bool) -> some View {
         HStack(spacing: 9) {
-            Text("\(entry.rank)")
-                .font(.subheadline.weight(mine ? .bold : .regular))
-                .foregroundStyle(mine ? Theme.accent : .secondary)
-                .frame(width: 20, alignment: .leading)
-            BlipzAvatar(name: entry.username, size: 28)
-            Text(entry.username)
-                .font(.subheadline.weight(mine ? .semibold : .regular))
-                .lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : 1)
-                .truncationMode(.tail)
+            rankBadge(entry.rank)
+            BlipzAvatar(name: entry.username, size: 34)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(entry.username)
+                    .font(.subheadline.weight(mine ? .semibold : .regular))
+                    .lineLimit(1).truncationMode(.tail)
+                if mine { Text("YOU").font(.caption2).foregroundStyle(Theme.accent) }
+            }
         }
+    }
+
+    private func rankBadge(_ rank: Int) -> some View {
+        let tint: Color = rank == 1 ? Theme.gold : rank == 2 ? Theme.silver : rank == 3 ? Theme.bronze : .secondary
+        return Text("\(rank)").font(.caption.weight(.semibold)).monospacedDigit()
+            .foregroundStyle(Theme.brandInk)
+            .frame(width: 28, height: 28)
+            .background(rank <= 3 ? tint.opacity(0.22) : .clear, in: Circle())
     }
 
     private func accessibleRankIdentity(_ entry: LeaderboardEntry, mine: Bool) -> some View {
@@ -322,32 +379,10 @@ struct RanksView: View {
     }
 
     private var globalTail: some View {
-        VStack(spacing: 12) {
-            ZStack {
-                Circle()
-                    .fill(Theme.accentSurface)
-                    .frame(width: 72, height: 72)
-                Image(systemName: "globe.americas.fill")
-                    .font(.system(size: 32, weight: .medium))
-                    .foregroundStyle(Theme.accentPressed)
-            }
-
-            VStack(spacing: 2) {
-                Text("That's everyone so far.")
-                    .font(.subheadline.weight(.semibold))
-                Text("The board fills up through the day.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-            .multilineTextAlignment(.center)
-
-            compactInviteLink(label: "Invite a friend")
-        }
-        .frame(maxWidth: .infinity)
-        .padding(14)
-        .premiumSurface(.neutral, cornerRadius: 16, shadow: false)
-        .padding(.horizontal, 18)
-        .padding(.top, 12)
+        Text("Today’s leading scores. The board updates throughout the day.")
+            .font(.caption).foregroundStyle(.secondary)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 20).padding(.top, 14).padding(.bottom, 24)
     }
 
     // Real, working share sheet (no fabricated invite link/code — the app has no such
