@@ -31,17 +31,27 @@ extension UserProfile {
 struct BlipzGameEmblem: View {
     let game: BlipzGame
     var size: CGFloat = 40
+    var imageURL: URL? = nil
 
     var body: some View {
-        RoundedRectangle(cornerRadius: size * 0.26, style: .continuous)
-            .fill(surface)
+        ZStack {
+            LinearGradient(colors: gradientColors, startPoint: .topLeading, endPoint: .bottomTrailing)
+            Circle().fill(.white.opacity(0.13))
+                .frame(width: size * 0.85).offset(x: -size * 0.22, y: -size * 0.28)
+            symbol
+            if game == .guess, let imageURL {
+                AsyncImage(url: imageURL) { image in
+                    image.resizable().scaledToFill()
+                } placeholder: { Color.clear }
+            }
+        }
             .frame(width: size, height: size)
-            .overlay(symbol)
+            .clipShape(RoundedRectangle(cornerRadius: size * 0.22, style: .continuous))
             .overlay(
-                RoundedRectangle(cornerRadius: size * 0.26, style: .continuous)
-                    .strokeBorder(tint.opacity(0.12), lineWidth: 0.5)
+                RoundedRectangle(cornerRadius: size * 0.22, style: .continuous)
+                    .strokeBorder(.white.opacity(0.22), lineWidth: 0.5)
             )
-            .shadow(color: tint.opacity(0.07), radius: 5, y: 2)
+            .shadow(color: tint.opacity(0.16), radius: 5, y: 2)
             .accessibilityHidden(true)
     }
 
@@ -56,23 +66,39 @@ struct BlipzGameEmblem: View {
                     .font(.system(size: size * 0.18, weight: .bold))
                     .offset(x: size * 0.09, y: -size * 0.08)
             }
-            .foregroundStyle(tint)
+            .foregroundStyle(.white)
         case .maths:
-            Image(systemName: "plus.forwardslash.minus")
-                .font(.system(size: size * 0.40, weight: .semibold))
-                .foregroundStyle(tint)
+            ZStack {
+                Circle().fill(Color.yellow.opacity(0.25)).frame(width: size * 0.65)
+                Image(systemName: "lightbulb.fill")
+                    .font(.system(size: size * 0.49, weight: .regular))
+                    .foregroundStyle(Color(red: 1, green: 0.82, blue: 0.30))
+                    .shadow(color: .yellow.opacity(0.5), radius: size * 0.09)
+                Image(systemName: "sparkle").font(.system(size: size * 0.16))
+                    .offset(x: size * 0.32, y: -size * 0.27)
+                Image(systemName: "plus").font(.system(size: size * 0.15, weight: .medium))
+                    .offset(x: -size * 0.32, y: size * 0.28)
+            }.foregroundStyle(.white.opacity(0.85))
         case .trivia:
-            Image(systemName: "questionmark.bubble.fill")
-                .font(.system(size: size * 0.40, weight: .semibold))
-                .foregroundStyle(tint)
+            ZStack {
+                RoundedRectangle(cornerRadius: size * 0.12)
+                    .fill(.white.opacity(0.14))
+                    .frame(width: size * 0.76, height: size * 0.52)
+                    .rotationEffect(.degrees(-12))
+                Image(systemName: "questionmark")
+                    .font(.system(size: size * 0.50, weight: .bold, design: .serif))
+                    .rotationEffect(.degrees(-8))
+                Image(systemName: "sparkle").font(.system(size: size * 0.17))
+                    .offset(x: size * 0.31, y: -size * 0.28)
+            }.foregroundStyle(.white)
         }
     }
 
-    private var surface: Color {
+    private var gradientColors: [Color] {
         switch game {
-        case .guess: Theme.guessSurface
-        case .maths: Theme.mathsSurface
-        case .trivia: Theme.triviaSurface
+        case .guess: [Color(red: 0.20, green: 0.52, blue: 0.40), Theme.buttonFill]
+        case .maths: [Color(red: 0.19, green: 0.63, blue: 0.58), Color(red: 0.04, green: 0.30, blue: 0.29)]
+        case .trivia: [Color(red: 0.60, green: 0.42, blue: 0.81), Color(red: 0.27, green: 0.16, blue: 0.48)]
         }
     }
 

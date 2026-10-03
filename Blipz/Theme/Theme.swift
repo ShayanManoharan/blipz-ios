@@ -2,13 +2,20 @@ import SwiftUI
 
 enum Theme {
     static let accent = Color.accentColor
+    // A stable, dark fill keeps white button labels legible in both appearances.
+    static let buttonFill = Color(red: 0.09, green: 0.33, blue: 0.26)
+    static let brandInk = Color(uiColor: UIColor { trait in
+        trait.userInterfaceStyle == .dark
+            ? UIColor(red: 0.76, green: 0.90, blue: 0.83, alpha: 1)
+            : UIColor(red: 0.10, green: 0.23, blue: 0.19, alpha: 1)
+    })
 
     // A quiet ivory canvas gives white content surfaces visible separation while
     // staying light enough to read as an Apple-adjacent neutral rather than beige.
     static let background = Color(uiColor: UIColor { trait in
         trait.userInterfaceStyle == .dark
             ? UIColor(red: 0.07, green: 0.07, blue: 0.09, alpha: 1)
-            : UIColor(red: 0.985, green: 0.974, blue: 0.950, alpha: 1)
+            : UIColor(red: 0.978, green: 0.976, blue: 0.952, alpha: 1)
     })
 
     static let cardBackground = Color(uiColor: UIColor { trait in
@@ -83,7 +90,7 @@ enum Theme {
     static let accentPressed = Color(uiColor: UIColor { trait in
         trait.userInterfaceStyle == .dark
             ? UIColor(red: 0.09, green: 0.55, blue: 0.36, alpha: 1)
-            : UIColor(red: 0.0, green: 0.376, blue: 0.22, alpha: 1)
+            : UIColor(red: 0.09, green: 0.33, blue: 0.26, alpha: 1)
     })
 
     static let accentWash = Color(uiColor: UIColor { trait in
@@ -194,16 +201,19 @@ struct PrimaryButtonStyle: ButtonStyle {
     // that has to be done explicitly, or a disabled button stays fully green (the "Lock
     // it in with nothing selected" bug).
     @Environment(\.isEnabled) private var isEnabled
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .font(.headline)
             .foregroundStyle(isEnabled ? .white : Color(.tertiaryLabel))
             .padding(.vertical, 14)
+            .padding(.horizontal, 16)
             .frame(maxWidth: .infinity)
-            .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(isEnabled ? Theme.accent : Color(.systemGray5)))
+            .frame(minHeight: 48)
+            .background(RoundedRectangle(cornerRadius: 18, style: .continuous).fill(isEnabled ? Theme.buttonFill : Color(.systemGray5)))
             .opacity(configuration.isPressed ? 0.85 : 1)
-            .scaleEffect(configuration.isPressed ? 0.98 : 1)
+            .scaleEffect(configuration.isPressed && !reduceMotion ? 0.98 : 1)
     }
 }
 

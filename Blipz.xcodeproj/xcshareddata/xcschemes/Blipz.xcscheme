@@ -29,6 +29,22 @@
       selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB"
       shouldUseLaunchSchemeArgsEnv = "YES"
       shouldAutocreateTestPlan = "YES">
+      <Testables>
+         <TestableReference skipped = "NO">
+            <BuildableReference BuildableIdentifier = "primary"
+               BlueprintIdentifier = "B7DDAA712FCE7F6B00FAE0DB"
+               BuildableName = "BlipzTests.xctest" BlueprintName = "BlipzTests"
+               ReferencedContainer = "container:Blipz.xcodeproj">
+            </BuildableReference>
+         </TestableReference>
+         <TestableReference skipped = "NO">
+            <BuildableReference BuildableIdentifier = "primary"
+               BlueprintIdentifier = "B7DDAA7B2FCE7F6B00FAE0DB"
+               BuildableName = "BlipzUITests.xctest" BlueprintName = "BlipzUITests"
+               ReferencedContainer = "container:Blipz.xcodeproj">
+            </BuildableReference>
+         </TestableReference>
+      </Testables>
    </TestAction>
    <LaunchAction
       buildConfiguration = "Debug"
