@@ -3,16 +3,14 @@ import Foundation
 // Environment-aware configuration — values come from the active build configuration's
 // .xcconfig (Blipz/Configs/{Debug,Staging,Release}.xcconfig) via Info.plist injection
 // (GENERATE_INFOPLIST_FILE=YES + INFOPLIST_KEY_* build settings). See
-// docs/DEPLOYMENT.md §2/§8 for the full environment strategy and the one-time Xcode
-// wiring step these xcconfig files still need (attaching them to their build
-// configuration, and adding the Staging configuration itself, is a project-settings
-// change too risky to script blindly — see that doc for exact steps).
+// docs/DEPLOYMENT.md §2/§8 for the full environment strategy. The Xcode project wires
+// each build configuration to its matching file.
 //
 // Supabase's URL/anon key are not secrets (designed to be embedded on-device) and are
 // identical across environments today, so they fall back to the existing known-good
-// values if the xcconfig hasn't been wired up yet — this is a value-consistency
-// convenience, not a security boundary. OpenAI's key and Supabase's service-role key
-// are backend-only and never appear anywhere in this app.
+// values if an injected key is ever absent — this is a value-consistency convenience,
+// not a security boundary. OpenAI's key and Supabase's service-role key are backend-only
+// and never appear anywhere in this app.
 enum Config {
     static let supabaseURL = infoPlistURL(key: "SupabaseURL")
         ?? URL(string: "https://eqivixkkpkkxijbgaegl.supabase.co")!
@@ -21,9 +19,8 @@ enum Config {
 
     static let apiBaseURL: URL = {
         #if DEBUG
-        // Falls back to local dev even before Configs/Debug.xcconfig is attached to
-        // the Debug build configuration — local development must never be broken by
-        // this change. Once attached, this reads the identical value from there.
+        // Debug resolves to local development through Debug.xcconfig, with this
+        // identical fallback retained so previews/tests remain resilient.
         return infoPlistURL(key: "APIBaseURL") ?? URL(string: "http://127.0.0.1:8000")!
         #else
         // Staging/Release have no safe fallback: a missing, placeholder, or
@@ -31,8 +28,8 @@ enum Config {
         // shipping broken or pointing at a developer's Mac.
         guard let value = infoPlistString(key: "APIBaseURL"), !value.isEmpty else {
             fatalError(
-                "Missing required Info.plist key 'APIBaseURL' — attach this build "
-                    + "configuration's .xcconfig (see Blipz/Configs/) before building. "
+                "Missing required Info.plist key 'APIBaseURL' — verify this build "
+                    + "configuration's xcconfig wiring (see Blipz/Configs/). "
                     + "See docs/DEPLOYMENT.md §8."
             )
         }

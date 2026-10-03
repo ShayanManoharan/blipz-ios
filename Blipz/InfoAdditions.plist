@@ -2,6 +2,12 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>APIBaseURL</key>
+	<string>$(INFOPLIST_KEY_APIBaseURL)</string>
+	<key>SupabaseAnonKey</key>
+	<string>$(INFOPLIST_KEY_SupabaseAnonKey)</string>
+	<key>SupabaseURL</key>
+	<string>$(INFOPLIST_KEY_SupabaseURL)</string>
 	<key>UIAppFonts</key>
 	<array>
 		<string>SpaceGrotesk-Medium.ttf</string>
