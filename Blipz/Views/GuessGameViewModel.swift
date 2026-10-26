@@ -6,6 +6,7 @@ final class GuessGameViewModel {
     private(set) var imageUrl: URL?
     var guessText = ""
     private(set) var result: GuessSubmitResponse?
+    private(set) var canPlay = false
     // Content fetch (loadDailyContent) and submission (performSubmit) are distinct
     // phases with distinct UI — kept as separate flags so the View never shows
     // submission-scoring copy while still loading the image, or vice versa.
@@ -36,32 +37,36 @@ final class GuessGameViewModel {
     private var submissionTask: Task<Void, Never>?
 
     func loadDailyContent() async {
+        guard !isLoading else { return }
         isLoading = true
+        canPlay = false
         errorMessage = nil
+        defer { isLoading = false }
         do {
+            let profile: UserProfile = try await APIClient.shared.get("users/me")
+            if profile.guessCompleted {
+                let review: GuessReviewResponse = try await APIClient.shared.get("games/guess-review")
+                restoreCompletedResult(review, userId: profile.id)
+                // A missing image must not turn a completed review back into play.
+                if let content: DailyContent = try? await APIClient.shared.get("games/daily-content") {
+                    imageUrl = URL(string: content.imageUrl)
+                }
+                return
+            }
             let content: DailyContent = try await APIClient.shared.get("games/daily-content")
             imageUrl = URL(string: content.imageUrl)
+            canPlay = result == nil
         } catch {
-            errorMessage = "Couldn't load today's Blip. \(error.friendlyMessage)"
+            errorMessage = "Couldn't verify today's Guess or load its review. \(error.friendlyMessage)"
         }
-        isLoading = false
-        await restoreResultIfAlreadyCompleted()
     }
 
-    // If today's Guess is already done (e.g. reopened from Today's recap), show the
-    // result screen immediately instead of the play composer. A 404 here just means
-    // "not completed yet" — that's the normal path, not an error worth surfacing.
-    private func restoreResultIfAlreadyCompleted() async {
-        guard result == nil else { return }
-        do {
-            let review: GuessReviewResponse = try await APIClient.shared.get("games/guess-review")
-            result = GuessSubmitResponse(
-                userId: "", guess: review.guess, score: review.score, date: review.date,
-                alreadyCompleted: true, actualPrompt: review.actualPrompt
-            )
-        } catch {
-            // Not completed yet today — stay in the play state.
-        }
+    func restoreCompletedResult(_ review: GuessReviewResponse, userId: String) {
+        canPlay = false
+        result = GuessSubmitResponse(
+            userId: userId, guess: review.guess, score: review.score, date: review.date,
+            alreadyCompleted: true, actualPrompt: review.actualPrompt
+        )
     }
 
     // guard !isLoading prevents a repeated tap from firing a second submission while
@@ -74,7 +79,7 @@ final class GuessGameViewModel {
     // self]` means the task holds no strong reference to this view model either — it
     // cannot keep it alive past when SwiftUI would otherwise release it.
     func submit() {
-        guard !guessText.isEmpty, !isSubmitting else { return }
+        guard canPlay, result == nil, !isLoading, !guessText.isEmpty, !isSubmitting else { return }
         submissionTask = Task { [weak self] in
             await self?.performSubmit()
         }
@@ -110,6 +115,7 @@ final class GuessGameViewModel {
                     try await Task.sleep(for: pollRetryDelay)
                 default:
                     result = try APIClient.shared.decode(GuessSubmitResponse.self, from: data)
+                    canPlay = false
                     break pollLoop
                 }
             }

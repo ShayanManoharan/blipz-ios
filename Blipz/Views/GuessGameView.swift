@@ -19,8 +19,10 @@ struct GuessGameView: View {
             ScrollView {
                 if let result = viewModel.result {
                     resultContent(result)
-                } else {
+                } else if viewModel.canPlay {
                     playContent
+                } else {
+                    entryStatus
                 }
             }
         }
@@ -41,6 +43,19 @@ struct GuessGameView: View {
     }
 
     // MARK: - Play (§3)
+
+    private var entryStatus: some View {
+        VStack(spacing: 16) {
+            if let error = viewModel.errorMessage {
+                Text(error).foregroundStyle(.secondary).multilineTextAlignment(.center)
+                Button("Retry Guess") { Task { await viewModel.loadDailyContent() } }
+                    .buttonStyle(PrimaryButtonStyle())
+            } else {
+                ProgressView("Checking today’s Guess…")
+            }
+        }
+        .padding(24)
+    }
 
     private var playContent: some View {
         VStack(spacing: 20) {

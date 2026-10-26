@@ -270,7 +270,7 @@ struct MathGameView: View {
             .accessibilityLabel(
                 viewModel.elapsedTime.map { "Maths complete, solved in \(elapsedString($0)), "
                     + "\(viewModel.result?.correct ?? viewModel.totalCount) problems completed" }
-                    ?? "Maths, \(viewModel.result?.correct ?? viewModel.totalCount) out of \(viewModel.totalCount), complete"
+                    ?? "Maths, \(viewModel.result?.correct ?? viewModel.totalCount) out of \(viewModel.result?.total ?? viewModel.totalCount), complete"
             )
 
             nextButton

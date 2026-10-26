@@ -7,6 +7,7 @@ final class TriviaGameViewModel {
     private(set) var currentIndex = 0
     private(set) var userAnswers: [TriviaAnswerSubmit] = []
     private(set) var result: TriviaSubmitResponse?
+    private(set) var canPlay = false
     private(set) var review: [TriviaReviewQuestion]?
     private(set) var isLoading = false
     private(set) var errorMessage: String?
@@ -20,21 +21,43 @@ final class TriviaGameViewModel {
     }
 
     func loadDailyContent() async {
+        guard !isLoading else { return }
         isLoading = true
+        canPlay = false
         errorMessage = nil
+        defer { isLoading = false }
         do {
+            let profile: UserProfile = try await APIClient.shared.get("users/me")
+            if restoreCompletedResult(profile) {
+                await loadReview()
+                return
+            }
             let content: DailyContent = try await APIClient.shared.get("games/daily-content")
             questions = content.triviaQuestions
+            canPlay = result == nil
         } catch {
             errorMessage = "Couldn't load today's trivia. \(error.friendlyMessage)"
         }
-        isLoading = false
+    }
+
+    @discardableResult
+    func restoreCompletedResult(_ profile: UserProfile) -> Bool {
+        guard profile.triviaCompleted else { return false }
+        canPlay = false
+        questions = []
+        userAnswers = []
+        currentIndex = 0
+        result = TriviaSubmitResponse(userId: profile.id, triviaScore: profile.triviaScore,
+            correct: profile.triviaScore, total: 5, date: BlipzDay.key(), alreadyCompleted: true)
+        return true
     }
 
     // selectedOptionId must be the tapped option's stable identifier (A/B/C/D, from its
     // position in `options`), never the visible option text — see
     // PRODUCTION_AUDIT.md's Trivia grading fix.
     func selectAnswer(questionId: String, selectedOptionId: String) {
+        guard canPlay, result == nil, !isLoading,
+              currentQuestion?.id == questionId, triviaOptionIds.contains(selectedOptionId) else { return }
         userAnswers.append(TriviaAnswerSubmit(questionId: questionId, selectedOptionId: selectedOptionId))
         currentIndex += 1
 
@@ -48,6 +71,7 @@ final class TriviaGameViewModel {
         do {
             let body = TriviaAnswersSubmit(answers: userAnswers)
             result = try await APIClient.shared.post("games/submit-trivia", body: body)
+            canPlay = false
             await loadReview()
         } catch {
             errorMessage = "Couldn't submit your answers. \(error.friendlyMessage)"
