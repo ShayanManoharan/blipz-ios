@@ -9,12 +9,22 @@ enum BlipzGame: Hashable {
     /// which order the player actually completes them in.
     static let orderedDaily: [BlipzGame] = [.guess, .maths, .trivia]
 
+    var title: String {
+        switch self {
+        case .guess: "Guess the Prompt"
+        case .maths: "Quick Maths"
+        case .trivia: "Daily Trivia"
+        }
+    }
+
     /// The next not-yet-played game after this one, in fixed order — drives each
     /// game's result screen chaining into the next unplayed game (nil once the day's
     /// last game is done, so the caller can show "See today's score" instead).
     func nextUnplayed(in profile: UserProfile) -> BlipzGame? {
         guard let index = Self.orderedDaily.firstIndex(of: self) else { return nil }
-        return Self.orderedDaily[(index + 1)...].first { !profile.isCompleted($0) }
+        let following = Array(Self.orderedDaily[(index + 1)...])
+        let earlier = Array(Self.orderedDaily[..<index])
+        return (following + earlier).first { !profile.isCompleted($0) }
     }
 }
 

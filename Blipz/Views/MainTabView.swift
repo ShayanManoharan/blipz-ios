@@ -2,6 +2,7 @@ import SwiftUI
 
 struct MainTabView: View {
     @State private var router = TabRouter.shared
+    @State private var reveal = DailyRevealCoordinator.shared
 
     var body: some View {
         // Three tabs per the 2a redesign — Friends is folded into Ranks as a
@@ -20,6 +21,9 @@ struct MainTabView: View {
                 .tag(AppTab.you)
         }
         .tint(Theme.accent)
+        .fullScreenCover(item: $reveal.presentation) { context in
+            DailyRevealView(context: context)
+        }
     }
 }
 

@@ -287,8 +287,10 @@ struct TodayView: View {
                 }.buttonStyle(PrimaryButtonStyle()).disabled(content == nil)
             }
         } else {
-            ShareLink(item: "My daily Blip: \(profile.totalScore.formatted())/100. Three games. A little more curious.") {
-                Label("Share my score", systemImage: "square.and.arrow.up")
+            Button {
+                DailyRevealCoordinator.shared.show(profile: profile)
+            } label: {
+                Label("See your Daily Reveal", systemImage: "sparkles")
             }.buttonStyle(PrimaryButtonStyle())
             Text("All three games complete. Come back for a fresh Blip tomorrow.")
                 .font(.caption).foregroundStyle(.secondary)

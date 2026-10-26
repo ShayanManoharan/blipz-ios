@@ -5,6 +5,7 @@ struct GuessGameView: View {
     @State private var profileViewModel = ProfileViewModel()
     @State private var displayedScore: Double = 0
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         VStack(spacing: 0) {
@@ -27,6 +28,16 @@ struct GuessGameView: View {
             }
         }
         .screenBackground()
+        .task(id: viewModel.result?.date) {
+            guard let result = viewModel.result else { return }
+            await profileViewModel.loadProfile()
+            if let profile = profileViewModel.profile, profileViewModel.errorMessage == nil {
+                await DailyRevealCoordinator.shared.presentAfterCompletion(
+                    profile: profile, date: result.date,
+                    alreadyCompleted: result.alreadyCompleted, reduceMotion: reduceMotion
+                )
+            }
+        }
         .toolbar(.hidden, for: .navigationBar)
         .task {
             await viewModel.loadDailyContent()
@@ -177,42 +188,12 @@ struct GuessGameView: View {
     // Chains directly into the next unplayed game rather than dumping the player back
     // on Today — see BlipzGame.nextUnplayed. When Guess is the last unplayed game, the
     // button just closes back to Today's already-complete recap instead.
-    @ViewBuilder
     private var nextButton: some View {
-        if let profile = profileViewModel.profile, let next = BlipzGame.guess.nextUnplayed(in: profile) {
-            NavigationLink {
-                nextDestination(next)
-            } label: {
-                Text("Next: \(nextGameLabel(next))")
-            }
-            .buttonStyle(PrimaryButtonStyle())
-            .simultaneousGesture(TapGesture().onEnded { Haptics.light() })
-        } else {
-            Button {
-                Haptics.light()
-                dismiss()
-            } label: {
-                Text("See today's score")
-            }
-            .buttonStyle(PrimaryButtonStyle())
-        }
-    }
-
-    @ViewBuilder
-    private func nextDestination(_ game: BlipzGame) -> some View {
-        switch game {
-        case .maths: MathGameView().toolbar(.hidden, for: .tabBar)
-        case .trivia: TriviaGameView().toolbar(.hidden, for: .tabBar)
-        case .guess: EmptyView()
-        }
-    }
-
-    private func nextGameLabel(_ game: BlipzGame) -> String {
-        switch game {
-        case .maths: return "quick maths"
-        case .trivia: return "trivia"
-        case .guess: return ""
-        }
+        DailyGameNextAction(
+            game: .guess, profile: profileViewModel.profile,
+            errorMessage: profileViewModel.errorMessage,
+            retry: { Task { await profileViewModel.loadProfile() } }
+        )
     }
 
     // MARK: - Image (shared between play and result — result uses a shorter crop)

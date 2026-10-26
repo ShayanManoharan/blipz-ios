@@ -4,6 +4,7 @@ struct MathGameView: View {
     @State private var viewModel = MathGameViewModel()
     @State private var profileViewModel = ProfileViewModel()
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         VStack(spacing: 0) {
@@ -31,6 +32,16 @@ struct MathGameView: View {
             }
         }
         .screenBackground()
+        .task(id: viewModel.result?.date) {
+            guard let result = viewModel.result else { return }
+            await profileViewModel.loadProfile()
+            if let profile = profileViewModel.profile, profileViewModel.errorMessage == nil {
+                await DailyRevealCoordinator.shared.presentAfterCompletion(
+                    profile: profile, date: result.date,
+                    alreadyCompleted: result.alreadyCompleted, reduceMotion: reduceMotion
+                )
+            }
+        }
         .toolbar(.hidden, for: .navigationBar)
         .task {
             await viewModel.loadDailyContent()
@@ -281,42 +292,12 @@ struct MathGameView: View {
         .transition(.opacity)
     }
 
-    @ViewBuilder
     private var nextButton: some View {
-        if let profile = profileViewModel.profile, let next = BlipzGame.maths.nextUnplayed(in: profile) {
-            NavigationLink {
-                nextDestination(next)
-            } label: {
-                Text("Next: \(nextGameLabel(next))")
-            }
-            .buttonStyle(PrimaryButtonStyle())
-            .simultaneousGesture(TapGesture().onEnded { Haptics.light() })
-        } else {
-            Button {
-                Haptics.light()
-                dismiss()
-            } label: {
-                Text("See today's score")
-            }
-            .buttonStyle(PrimaryButtonStyle())
-        }
-    }
-
-    @ViewBuilder
-    private func nextDestination(_ game: BlipzGame) -> some View {
-        switch game {
-        case .trivia: TriviaGameView().toolbar(.hidden, for: .tabBar)
-        case .guess: GuessGameView().toolbar(.hidden, for: .tabBar)
-        case .maths: EmptyView()
-        }
-    }
-
-    private func nextGameLabel(_ game: BlipzGame) -> String {
-        switch game {
-        case .trivia: return "trivia"
-        case .guess: return "guess the prompt"
-        case .maths: return ""
-        }
+        DailyGameNextAction(
+            game: .maths, profile: profileViewModel.profile,
+            errorMessage: profileViewModel.errorMessage,
+            retry: { Task { await profileViewModel.loadProfile() } }
+        )
     }
 
     private func elapsedString(_ interval: TimeInterval) -> String {
